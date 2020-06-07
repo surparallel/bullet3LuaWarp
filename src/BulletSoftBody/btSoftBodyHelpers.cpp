@@ -1300,23 +1300,13 @@ btSoftBody* btSoftBodyHelpers::CreateFromVtkFile(btSoftBodyWorldInfo& worldInfo,
         }
         else if (reading_tets)
         {
-			int d;
-			ss >> d;
-			if (d != 4)
-			{
-				printf("Load deformable failed: Only Tetrahedra are supported in VTK file.\n");
-				fs.close();
-				return 0;
-			}
             ss.ignore(128, ' '); // ignore "4"
             Index tet;
             tet.resize(4);
             for (size_t i = 0; i < 4; i++)
             {
                 ss >> tet[i];
-                printf("%d ", tet[i]);
             }
-            printf("\n");
             indices[indices_count++] = tet;
         }
     }
@@ -1420,70 +1410,31 @@ void btSoftBodyHelpers::generateBoundaryFaces(btSoftBody* psb)
     }
 }
 
-//Write the surface mesh to an obj file.
 void btSoftBodyHelpers::writeObj(const char* filename, const btSoftBody* psb)
 {
-	std::ofstream fs;
-	fs.open(filename);
-	btAssert(fs);
-
-	if (psb->m_tetras.size() > 0)
-	{
-        // For tetrahedron mesh, we need to re-index the surface mesh for it to be in obj file/ 
-		std::map<int, int> dict;
-		for (int i = 0; i < psb->m_faces.size(); i++)
-		{
-			for (int d = 0; d < 3; d++)
-			{
-				int index = psb->m_faces[i].m_n[d]->index;
-				if (dict.find(index) == dict.end())
-				{
-					int dict_size = dict.size();
-					dict[index] = dict_size;
-					fs << "v";
-					for (int k = 0; k < 3; k++)
-					{
-						fs << " " << psb->m_nodes[index].m_x[k];
-					}
-					fs << "\n";
-				}
-			}
-		}
-                // Write surface mesh.
-		for (int i = 0; i < psb->m_faces.size(); ++i)
-		{
-			fs << "f";
-			for (int n = 0; n < 3; n++)
-			{
-				fs << " " << dict[psb->m_faces[i].m_n[n]->index] + 1;
-			}
-			fs << "\n";
-		}
-	}
-	else
-	{
-          // For trimesh, directly write out all the nodes and faces.xs
-		for (int i = 0; i < psb->m_nodes.size(); ++i)
-		{
-			fs << "v";
-			for (int d = 0; d < 3; d++)
-			{
-				fs << " " << psb->m_nodes[i].m_x[d];
-			}
-			fs << "\n";
-		}
-
-		for (int i = 0; i < psb->m_faces.size(); ++i)
-		{
-			fs << "f";
-			for (int n = 0; n < 3; n++)
-			{
-				fs << " " << psb->m_faces[i].m_n[n]->index + 1;
-			}
-			fs << "\n";
-		}
-	}
-	fs.close();
+    std::ofstream fs;
+    fs.open(filename);
+    btAssert(fs);
+    for (int i = 0; i < psb->m_nodes.size(); ++i)
+    {
+        fs << "v";
+        for (int d = 0; d < 3; d++)
+        {
+             fs << " " << psb->m_nodes[i].m_x[d];
+        }
+        fs << "\n";
+    }
+    
+    for (int i = 0; i < psb->m_faces.size(); ++i)
+    {
+        fs << "f";
+        for (int n = 0; n < 3; n++)
+        {
+            fs << " " << psb->m_faces[i].m_n[n]->index + 1;
+        }
+        fs << "\n";
+    }
+    fs.close();
 }
 
 void btSoftBodyHelpers::duplicateFaces(const char* filename, const btSoftBody* psb)
@@ -1549,27 +1500,10 @@ void btSoftBodyHelpers::getBarycentricWeights(const btVector3& a, const btVector
     bary = btVector4(va6*v6, vb6*v6, vc6*v6, vd6*v6);
 }
 
-// Given a simplex with vertices a,b,c, find the barycentric weights of p in this simplex. bary[3] = 0.
-void btSoftBodyHelpers::getBarycentricWeights(const btVector3& a, const btVector3& b, const btVector3& c, const btVector3& p, btVector4& bary)
-{
-    btVector3 v0 = b - a, v1 = c - a, v2 = p - a;
-    btScalar d00 = btDot(v0, v0);
-    btScalar d01 = btDot(v0, v1);
-    btScalar d11 = btDot(v1, v1);
-    btScalar d20 = btDot(v2, v0);
-    btScalar d21 = btDot(v2, v1);
-    btScalar invDenom = 1.0 / (d00 * d11 - d01 * d01);
-    bary[1] = (d11 * d20 - d01 * d21) * invDenom;
-    bary[2] = (d00 * d21 - d01 * d20) * invDenom;
-    bary[0] = 1.0 - bary[1] - bary[2];
-    bary[3] = 0;
-}
-
 // Iterate through all render nodes to find the simulation tetrahedron that contains the render node and record the barycentric weights
 // If the node is not inside any tetrahedron, assign it to the tetrahedron in which the node has the least negative barycentric weight
 void btSoftBodyHelpers::interpolateBarycentricWeights(btSoftBody* psb)
 {
-    psb->m_z.resize(0);
     psb->m_renderNodesInterpolationWeights.resize(psb->m_renderNodes.size());
     psb->m_renderNodesParents.resize(psb->m_renderNodes.size());
     for (int i = 0; i < psb->m_renderNodes.size(); ++i)
@@ -1579,6 +1513,7 @@ void btSoftBodyHelpers::interpolateBarycentricWeights(btSoftBody* psb)
         btVector4 optimal_bary;
         btScalar min_bary_weight = -1e3;
         btAlignedObjectArray<const btSoftBody::Node*> optimal_parents;
+        bool found = false;
         for (int j = 0; j < psb->m_tetras.size(); ++j)
         {
             const btSoftBody::Tetra& t = psb->m_tetras[j];
@@ -1607,57 +1542,5 @@ void btSoftBodyHelpers::interpolateBarycentricWeights(btSoftBody* psb)
         }
         psb->m_renderNodesInterpolationWeights[i] = optimal_bary;
         psb->m_renderNodesParents[i] = optimal_parents;
-    }
-}
-
-
-// Iterate through all render nodes to find the simulation triangle that's closest to the node in the barycentric sense.
-void btSoftBodyHelpers::extrapolateBarycentricWeights(btSoftBody* psb)
-{
-    psb->m_renderNodesInterpolationWeights.resize(psb->m_renderNodes.size());
-    psb->m_renderNodesParents.resize(psb->m_renderNodes.size());
-    psb->m_z.resize(psb->m_renderNodes.size());
-    for (int i = 0; i < psb->m_renderNodes.size(); ++i)
-    {
-        const btVector3& p = psb->m_renderNodes[i].m_x;
-        btVector4 bary;
-        btVector4 optimal_bary;
-        btScalar min_bary_weight = -SIMD_INFINITY;
-        btAlignedObjectArray<const btSoftBody::Node*> optimal_parents;
-        btScalar dist = 0, optimal_dist = 0;
-        for (int j = 0; j < psb->m_faces.size(); ++j)
-        {
-            const btSoftBody::Face& f = psb->m_faces[j];
-            btVector3 n = btCross(f.m_n[1]->m_x - f.m_n[0]->m_x,  f.m_n[2]->m_x - f.m_n[0]->m_x);
-            btVector3 unit_n = n.normalized();
-            dist = (p-f.m_n[0]->m_x).dot(unit_n);
-            btVector3 proj_p = p - dist*unit_n;
-            getBarycentricWeights(f.m_n[0]->m_x, f.m_n[1]->m_x, f.m_n[2]->m_x, proj_p, bary);
-            btScalar new_min_bary_weight = bary[0];
-            for (int k = 1; k < 3; ++k)
-            {
-                new_min_bary_weight = btMin(new_min_bary_weight, bary[k]);
-            }
-
-            // p is out of the current best triangle, we found a traingle that's better
-            bool better_than_closest_outisde = (new_min_bary_weight > min_bary_weight && min_bary_weight<0.);
-            // p is inside of the current best triangle, we found a triangle that's better
-            bool better_than_best_inside = (new_min_bary_weight>=0 &&  min_bary_weight>=0 && btFabs(dist)<btFabs(optimal_dist));
-
-            if (better_than_closest_outisde || better_than_best_inside)
-            {
-                btAlignedObjectArray<const btSoftBody::Node*> parents;
-                parents.push_back(f.m_n[0]);
-                parents.push_back(f.m_n[1]);
-                parents.push_back(f.m_n[2]);
-                optimal_parents = parents;
-                optimal_bary = bary;
-                optimal_dist = dist;
-                min_bary_weight = new_min_bary_weight;
-            }
-        }
-        psb->m_renderNodesInterpolationWeights[i] = optimal_bary;
-        psb->m_renderNodesParents[i] = optimal_parents;
-        psb->m_z[i] = optimal_dist;
     }
 }

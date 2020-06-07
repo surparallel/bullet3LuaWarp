@@ -1,8 +1,6 @@
 import pybullet as p
 import time
 from pybullet_utils import urdfEditor
-import pybullet_data
-
 
 ##########################################
 org2 = p.connect(p.DIRECT)
@@ -11,8 +9,6 @@ if (org < 0):
   org = p.connect(p.DIRECT)
 
 gui = p.connect(p.GUI)
-
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
 p.resetSimulation(physicsClientId=org)
 

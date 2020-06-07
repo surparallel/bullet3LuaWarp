@@ -2,10 +2,7 @@ import pybullet as p
 import time
 import numpy as np
 
-import pybullet_data
-
 p.connect(p.GUI)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.loadURDF("plane.urdf")
 p.loadURDF("sphere2.urdf",[0,0,2])
 

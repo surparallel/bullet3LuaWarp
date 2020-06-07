@@ -5,7 +5,7 @@
 import math
 
 import numpy as np
-import tf.compat.v1 as tf
+import tensorflow as tf
 #from google3.pyglib import app
 #from google3.pyglib import flags
 from pybullet_envs.minitaur.envs import minitaur_randomize_terrain_gym_env

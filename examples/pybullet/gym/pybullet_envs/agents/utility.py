@@ -22,10 +22,7 @@ import os
 import re
 
 import ruamel.yaml as yaml
-try:
-  import tensorflow.compat.v1 as tf
-except Exception:
-  import tensorflow as tf
+import tensorflow as tf
 
 from . import tools
 

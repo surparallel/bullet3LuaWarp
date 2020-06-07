@@ -24,6 +24,8 @@ subject to the following restrictions:
 #include "LinearMath/btAlignedObjectArray.h"
 
 #include "../CommonInterfaces/CommonRigidBodyBase.h"
+#include "BulletDynamics/Character/btKinematicCharacterController.h"
+#include "BulletCollision\CollisionDispatch\btGhostObject.h"
 
 struct BasicExample : public CommonRigidBodyBase
 {
@@ -44,6 +46,11 @@ struct BasicExample : public CommonRigidBodyBase
 	}
 };
 
+void bullet3_eventFunCall(void* m_param, btKinematicCharacterController::EVENT_CONTROL ec, btVector3 start, btVector3 end, btScalar angle) {
+
+	int a = 0;
+}
+
 void BasicExample::initPhysics()
 {
 	m_guiHelper->setUpAxis(1);
@@ -56,7 +63,7 @@ void BasicExample::initPhysics()
 		m_dynamicsWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe + btIDebugDraw::DBG_DrawContactPoints);
 
 	///create a few basic rigid bodies
-	btBoxShape* groundShape = createBoxShape(btVector3(btScalar(50.), btScalar(50.), btScalar(50.)));
+	btBoxShape* groundShape = createBoxShape(btVector3(btScalar(150.), btScalar(50.), btScalar(150.)));
 
 	//groundShape->initializePolyhedralFeatures();
 	//btCollisionShape* groundShape = new btStaticPlaneShape(btVector3(0,1,0),50);
@@ -68,10 +75,11 @@ void BasicExample::initPhysics()
 	groundTransform.setOrigin(btVector3(0, -50, 0));
 
 	{
-		btScalar mass(0.);
-		createRigidBody(mass, groundTransform, groundShape, btVector4(0, 0, 1, 1));
-	}
 
+		btScalar mass(0.);
+		btRigidBody* brb = createRigidBody(mass, groundTransform, groundShape, btVector4(0, 0, 1, 1));
+	}
+	/*
 	{
 		//create a few dynamic rigidbodies
 		// Re-using the same collision is better for memory usage and performance
@@ -109,8 +117,87 @@ void BasicExample::initPhysics()
 				}
 			}
 		}
-	}
+	}*/
 
+		{
+			btKinematicCharacterController* m_character;
+			btPairCachingGhostObject* m_ghostObject;
+
+			btTransform m_trans;
+			m_trans.setIdentity();
+			m_trans.setOrigin(btVector3(5.0, 2.0, 5.0));
+
+			m_ghostObject = new btPairCachingGhostObject();
+			m_ghostObject->setWorldTransform(m_trans);
+			((btAxisSweep3*)m_dynamicsWorld->getBroadphase())->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+			//this->m_overlappingPairCache->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+			btScalar characterHeight = 1.0f;
+			btScalar characterWidth = 1.0f;
+			btConvexShape* capsule = new btCapsuleShape(characterWidth, characterHeight);
+			m_ghostObject->setCollisionShape(capsule);
+			m_ghostObject->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT | btCollisionObject::CF_KINEMATIC_OBJECT);
+
+			btScalar stepHeight = btScalar(0.0);
+			m_character = new btKinematicCharacterController(m_ghostObject, capsule, stepHeight);
+			m_character->setWalkDirection(btVector3(0.0, 0.0, 0.0));
+			m_character->m_eventFunCall = bullet3_eventFunCall;
+			//向世界中添加碰撞对象   
+			m_dynamicsWorld->addCollisionObject(
+				m_ghostObject,
+				btBroadphaseProxy::CharacterFilter,
+				btBroadphaseProxy::StaticFilter | btBroadphaseProxy::DefaultFilter);
+			m_dynamicsWorld->addAction(m_character);
+			
+			btBoxShape* colShape = createBoxShape(btVector3(1, 1, 1));
+			//btCollisionShape* colShape = new btSphereShape(btScalar(1.));
+			m_collisionShapes.push_back(colShape);
+
+			btTransform startTransform;
+			startTransform.setIdentity();
+			startTransform.setOrigin(btVector3(
+				btScalar(10),
+				btScalar(3),
+				btScalar(0)));
+			btScalar mass(1.0f);
+			//createRigidBody(mass, startTransform, colShape);
+
+			m_character->moveDirection(btVector3(
+				btScalar(10),
+				btScalar(0),
+				btScalar(0)));
+		}
+		/*
+	{
+		btKinematicCharacterController* m_character;
+		btPairCachingGhostObject* m_ghostObject;
+
+		btTransform m_trans;
+		m_trans.setIdentity();
+		m_trans.setOrigin(btVector3(
+			btScalar(10),
+			btScalar(2.0),
+			btScalar(0)));
+
+		m_ghostObject = new btPairCachingGhostObject();
+		m_ghostObject->setWorldTransform(m_trans);
+		//this->m_overlappingPairCache->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+		btScalar characterHeight = 1.0f;
+		btScalar characterWidth = 1.0f;
+		btConvexShape* capsule = new btCapsuleShape(characterWidth, characterHeight);
+		m_ghostObject->setCollisionShape(capsule);
+		//m_ghostObject->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT | btCollisionObject::CF_KINEMATIC_OBJECT);
+		btScalar stepHeight = btScalar(0.0);
+		m_character = new btKinematicCharacterController(m_ghostObject, capsule, stepHeight);
+		m_character->setWalkDirection(btVector3(0.0, 0.0, 0.0));
+
+		//向世界中添加碰撞对象   
+		m_dynamicsWorld->addCollisionObject(
+			m_ghostObject,
+			btBroadphaseProxy::CharacterFilter,
+			btBroadphaseProxy::StaticFilter | btBroadphaseProxy::DefaultFilter);
+		m_dynamicsWorld->addAction(m_character);
+		}*/
+	
 	m_guiHelper->autogenerateGraphicsObjects(m_dynamicsWorld);
 }
 

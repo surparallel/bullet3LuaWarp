@@ -28,17 +28,9 @@ public:
 		m_emptyExample.stepSimulation(deltaTime);
 	}
 
-	virtual void updateGraphics()
-	{
-	}
-
 	virtual bool requestedExit()
 	{
 		return false;
-	}
-
-	virtual void setSharedMemoryInterface(class SharedMemoryInterface* sharedMem)
-	{
 	}
 };
 

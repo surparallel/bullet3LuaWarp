@@ -21,7 +21,7 @@ btScalar btDeformableMultiBodyConstraintSolver::solveDeformableGroupIterations(b
 {
     {
         ///this is a special step to resolve penetrations (just for contacts)
-        solveGroupCacheFriendlySplitImpulseIterations(bodies, numBodies, deformableBodies, numDeformableBodies, manifoldPtr, numManifolds, constraints, numConstraints, infoGlobal, debugDrawer);
+        solveGroupCacheFriendlySplitImpulseIterations(bodies, numBodies, manifoldPtr, numManifolds, constraints, numConstraints, infoGlobal, debugDrawer);
 
         int maxIterations = m_maxOverrideNumSolverIterations > infoGlobal.m_numIterations ? m_maxOverrideNumSolverIterations : infoGlobal.m_numIterations;
         for (int iteration = 0; iteration < maxIterations; iteration++)
@@ -32,7 +32,7 @@ btScalar btDeformableMultiBodyConstraintSolver::solveDeformableGroupIterations(b
             m_leastSquaresResidual = solveSingleIteration(iteration, bodies, numBodies, manifoldPtr, numManifolds, constraints, numConstraints, infoGlobal, debugDrawer);
             // solver body velocity -> rigid body velocity
             solverBodyWriteBack(infoGlobal);
-            btScalar deformableResidual = m_deformableSolver->solveContactConstraints(deformableBodies,numDeformableBodies, infoGlobal);
+            btScalar deformableResidual = m_deformableSolver->solveContactConstraints(deformableBodies,numDeformableBodies);
             // update rigid body velocity in rigid/deformable contact
             m_leastSquaresResidual = btMax(m_leastSquaresResidual, deformableResidual);
             // solver body velocity <- rigid body velocity
@@ -41,8 +41,7 @@ btScalar btDeformableMultiBodyConstraintSolver::solveDeformableGroupIterations(b
             if (m_leastSquaresResidual <= infoGlobal.m_leastSquaresResidualThreshold || (iteration >= (maxIterations - 1)))
             {
 #ifdef VERBOSE_RESIDUAL_PRINTF
-                if (iteration >= (maxIterations - 1))
-                    printf("residual = %f at iteration #%d\n", m_leastSquaresResidual, iteration);
+                printf("residual = %f at iteration #%d\n", m_leastSquaresResidual, iteration);
 #endif
                 m_analyticsData.m_numSolverCalls++;
                 m_analyticsData.m_numIterationsUsed = iteration+1;
@@ -106,13 +105,14 @@ void btDeformableMultiBodyConstraintSolver::solverBodyWriteBack(const btContactS
     }
 }
 
-void btDeformableMultiBodyConstraintSolver::solveGroupCacheFriendlySplitImpulseIterations(btCollisionObject** bodies, int numBodies, btCollisionObject** deformableBodies,int numDeformableBodies, btPersistentManifold** manifoldPtr, int numManifolds, btTypedConstraint** constraints, int numConstraints, const btContactSolverInfo& infoGlobal, btIDebugDraw* debugDrawer)
+void btDeformableMultiBodyConstraintSolver::solveGroupCacheFriendlySplitImpulseIterations(btCollisionObject** bodies, int numBodies, btPersistentManifold** manifoldPtr, int numManifolds, btTypedConstraint** constraints, int numConstraints, const btContactSolverInfo& infoGlobal, btIDebugDraw* debugDrawer)
 {
     BT_PROFILE("solveGroupCacheFriendlySplitImpulseIterations");
     int iteration;
     if (infoGlobal.m_splitImpulse)
     {
         {
+            m_deformableSolver->splitImpulseSetup(infoGlobal);
             for (iteration = 0; iteration < infoGlobal.m_numIterations; iteration++)
             {
                 btScalar leastSquaresResidual = 0.f;
@@ -127,15 +127,13 @@ void btDeformableMultiBodyConstraintSolver::solveGroupCacheFriendlySplitImpulseI
                         leastSquaresResidual = btMax(leastSquaresResidual, residual * residual);
                     }
                     // solve the position correction between deformable and rigid/multibody
-//                    btScalar residual = m_deformableSolver->solveSplitImpulse(infoGlobal);
-                    btScalar residual = m_deformableSolver->m_objective->m_projection.solveSplitImpulse(deformableBodies, numDeformableBodies, infoGlobal);
+                    btScalar residual = m_deformableSolver->solveSplitImpulse(infoGlobal);
                     leastSquaresResidual = btMax(leastSquaresResidual, residual * residual);
                 }
                 if (leastSquaresResidual <= infoGlobal.m_leastSquaresResidualThreshold || iteration >= (infoGlobal.m_numIterations - 1))
                 {
 #ifdef VERBOSE_RESIDUAL_PRINTF
-                    if (iteration >= (infoGlobal.m_numIterations - 1))
-                        printf("split impulse residual = %f at iteration #%d\n", leastSquaresResidual, iteration);
+                    printf("residual = %f at iteration #%d\n", leastSquaresResidual, iteration);
 #endif
                     break;
                 }

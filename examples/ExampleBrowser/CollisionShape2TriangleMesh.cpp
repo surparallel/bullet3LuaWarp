@@ -82,13 +82,7 @@ void CollisionShape2TriangleMesh(btCollisionShape* collisionShape, const btTrans
 
 					for (int j = 2; j >= 0; j--)
 					{
-						int graphicsindex;
-                                                switch (indicestype) {
-                                                        case PHY_INTEGER: graphicsindex = gfxbase[j]; break;
-                                                        case PHY_SHORT: graphicsindex = ((unsigned short*)gfxbase)[j]; break;
-                                                        case PHY_UCHAR: graphicsindex = ((unsigned char*)gfxbase)[j]; break;
-                                                        default: btAssert(0);
-                                                }
+						int graphicsindex = indicestype == PHY_SHORT ? ((unsigned short*)gfxbase)[j] : gfxbase[j];
 						if (type == PHY_FLOAT)
 						{
 							float* graphicsbase = (float*)(vertexbase + graphicsindex * stride);
@@ -147,7 +141,6 @@ void CollisionShape2TriangleMesh(btCollisionShape* collisionShape, const btTrans
 
 					if (pol)
 					{
-						int baseIndex = vertexPositions.size();
 						for (int v = 0; v < pol->m_vertices.size(); v++)
 						{
 							vertexPositions.push_back(pol->m_vertices[v]);
@@ -159,9 +152,9 @@ void CollisionShape2TriangleMesh(btCollisionShape* collisionShape, const btTrans
 						{
 							for (int ii = 2; ii < pol->m_faces[f].m_indices.size(); ii++)
 							{
-								indicesOut.push_back(baseIndex+pol->m_faces[f].m_indices[0]);
-								indicesOut.push_back(baseIndex + pol->m_faces[f].m_indices[ii - 1]);
-								indicesOut.push_back(baseIndex + pol->m_faces[f].m_indices[ii]);
+								indicesOut.push_back(pol->m_faces[f].m_indices[0]);
+								indicesOut.push_back(pol->m_faces[f].m_indices[ii - 1]);
+								indicesOut.push_back(pol->m_faces[f].m_indices[ii]);
 							}
 						}
 					}

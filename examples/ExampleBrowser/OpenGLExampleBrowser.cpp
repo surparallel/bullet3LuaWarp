@@ -882,7 +882,7 @@ bool OpenGLExampleBrowser::init(int argc, char* argv[])
 
 #ifndef NO_OPENGL3
 	SimpleOpenGL3App* simpleApp = 0;
-	sUseOpenGL2 = args.CheckCmdLineFlag("opengl2");
+	sUseOpenGL2 = true;// args.CheckCmdLineFlag("opengl2");
 	args.GetCmdLineArgument("render_device", gRenderDevice);
 	args.GetCmdLineArgument("window_backend", gWindowBackend);
 #else
@@ -921,13 +921,6 @@ bool OpenGLExampleBrowser::init(int argc, char* argv[])
 	m_internalData->m_app = s_app;
 	char* gVideoFileName = 0;
 	args.GetCmdLineArgument("mp4", gVideoFileName);
-	int gVideoFps = 0;
-	args.GetCmdLineArgument("mp4fps", gVideoFps);
-	if (gVideoFps)
-	{
-		simpleApp->setMp4Fps(gVideoFps);
-	}
-
 #ifndef NO_OPENGL3
 	if (gVideoFileName)
 		simpleApp->dumpFramesToVideo(gVideoFileName);

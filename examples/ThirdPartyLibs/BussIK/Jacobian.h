@@ -66,15 +66,15 @@ public:
 	void SetJendTrans(MatrixRmn& J);
 	void SetDeltaS(VectorRn& S);
 
-	void CalcDeltaThetas(MatrixRmn& AugMat);  // Use this only if the Current Mode has been set.
+	void CalcDeltaThetas();  // Use this only if the Current Mode has been set.
 	void ZeroDeltaThetas();
 	void CalcDeltaThetasTranspose();
 	void CalcDeltaThetasPseudoinverse();
-	void CalcDeltaThetasDLS(MatrixRmn& AugMat);
-	void CalcDeltaThetasDLS2(const VectorRn& dVec, MatrixRmn& AugMat);
+	void CalcDeltaThetasDLS();
+	void CalcDeltaThetasDLS2(const VectorRn& dVec);
 	void CalcDeltaThetasDLSwithSVD();
 	void CalcDeltaThetasSDLS();
-	void CalcDeltaThetasDLSwithNullspace(const VectorRn& desiredV, MatrixRmn& AugMat);
+	void CalcDeltaThetasDLSwithNullspace(const VectorRn& desiredV);
 
 	void UpdateThetas();
 	void UpdateThetaDot();

@@ -1,8 +1,5 @@
 import numpy as np
-try:
-  import tensorflow.compat.v1 as tf
-except Exception:
-  import tensorflow as tf
+import tensorflow as tf
 from abc import abstractmethod
 
 from pybullet_envs.deep_mimic.learning.rl_agent import RLAgent

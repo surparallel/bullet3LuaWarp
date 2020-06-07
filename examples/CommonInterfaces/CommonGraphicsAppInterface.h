@@ -93,7 +93,6 @@ struct CommonGraphicsApp
 		if (blue)
 			*blue = m_backgroundColorRGB[2];
 	}
-	virtual void setMp4Fps(int fps) {}
 	virtual void setBackgroundColor(float red, float green, float blue)
 	{
 		m_backgroundColorRGB[0] = red;

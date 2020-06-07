@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tf.compat.v1 as tf
+import tensorflow as tf
 from pybullet_envs.agents.ppo import normalize
 from pybullet_envs.agents import utility
 

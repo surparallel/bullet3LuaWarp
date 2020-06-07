@@ -7,6 +7,7 @@
 #include "../CommonInterfaces/CommonRenderInterface.h"
 #include "../CommonInterfaces/CommonExampleInterface.h"
 #include "../CommonInterfaces/CommonGUIHelperInterface.h"
+#include "../OpenGLWindow/OpenGLInclude.h"
 
 #include "BussIK/Node.h"
 #include "BussIK/Tree.h"
@@ -99,7 +100,7 @@ void DoUpdateStep(double Tstep, Tree& treeY, Jacobian* jacob, int ikMethod)
 		jacob->SetJendActive();
 	}
 	jacob->ComputeJacobian(targetaa);  // Set up Jacobian and deltaS vectors
-	MatrixRmn AugMat;
+
 	// Calculate the change in theta values
 	switch (ikMethod)
 	{
@@ -107,7 +108,7 @@ void DoUpdateStep(double Tstep, Tree& treeY, Jacobian* jacob, int ikMethod)
 			jacob->CalcDeltaThetasTranspose();  // Jacobian transpose method
 			break;
 		case IK_DLS:
-			jacob->CalcDeltaThetasDLS(AugMat);  // Damped least squares method
+			jacob->CalcDeltaThetasDLS();  // Damped least squares method
 			break;
 		case IK_DLS_SVD:
 			jacob->CalcDeltaThetasDLSwithSVD();
@@ -226,6 +227,7 @@ public:
 		int lineWidth = 2;
 		if (node != 0)
 		{
+			//	glPushMatrix();
 			b3Vector3 pos = b3MakeVector3(tr.getOrigin().x, tr.getOrigin().y, tr.getOrigin().z);
 			b3Vector3 color1 = b3MakeVector3(0, 1, 0);
 			int pointSize = 10;
@@ -240,6 +242,7 @@ public:
 
 			m_app->m_renderer->drawLine(pos, pos + 0.1 * axisWorld, b3MakeVector3(.2, 0.2, 0.7), 5);
 
+			//	glPopMatrix();
 			if (node->right)
 			{
 				b3Transform act;

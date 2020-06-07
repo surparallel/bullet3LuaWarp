@@ -1,6 +1,4 @@
 import pybullet as p
-import pybullet_data
-
 
 usePort = True
 
@@ -15,7 +13,5 @@ if (id < 0):
   exit(0)
 
 print("Connected to GRPC")
-
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 r2d2 = p.loadURDF("r2d2.urdf")
 print("numJoints = ", p.getNumJoints(r2d2))

@@ -7,9 +7,13 @@
 #include "CommonGUIHelperInterface.h"
 #include "CommonRenderInterface.h"
 #include "CommonCameraInterface.h"
+
 #include "CommonGraphicsAppInterface.h"
 #include "CommonWindowInterface.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "LinearMath/btHashMap.h"
+#include "BulletDynamics/Character/btKinematicCharacterController.h"
+#include "BulletCollision/CollisionDispatch/btGhostObject.h"
 
 struct CommonRigidBodyBase : public CommonExampleInterface
 {
@@ -30,6 +34,10 @@ struct CommonRigidBodyBase : public CommonExampleInterface
 	btScalar m_oldPickingDist;
 	struct GUIHelperInterface* m_guiHelper;
 
+	btHashMap<btHashString, btKinematicCharacterController*> m_character;
+	btHashMap<btHashString, btPairCachingGhostObject*> m_ghostObject;
+	btHashMap<btHashString, btRigidBody*> m_btRigidBody;
+
 	CommonRigidBodyBase(struct GUIHelperInterface* helper)
 		: m_broadphase(0),
 		  m_dispatcher(0),
@@ -48,6 +56,97 @@ struct CommonRigidBodyBase : public CommonExampleInterface
 	btDiscreteDynamicsWorld* getDynamicsWorld()
 	{
 		return m_dynamicsWorld;
+	}
+
+	virtual bool rayCharacter(const btVector3& rayFromWorld, const btVector3& rayToWorld, btVector3 &p, std::string &name)
+	{
+		btVector3 from(rayFromWorld);
+		btVector3 to(rayToWorld);
+		//m_dynamicsWorld->getDebugDrawer()->drawLine(from, to, btVector4(0, 0, 1, 1));
+
+		btCollisionWorld::ClosestRayResultCallback closestResults(from, to);
+		closestResults.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+
+		m_dynamicsWorld->rayTest(from, to, closestResults);
+
+		if (closestResults.hasHit())
+		{
+			p = from.lerp(to, closestResults.m_closestHitFraction);
+			if (closestResults.m_collisionObject->getInternalType() & btCollisionObject::CO_GHOST_OBJECT) {
+				btPairCachingGhostObject* ghostObject = (btPairCachingGhostObject*)closestResults.m_collisionObject;
+				name = ghostObject->strName.m_string1;	
+			}
+			return true;
+		}
+		return false;
+	}
+
+	virtual void addCharacter(btHashString strName,
+		void* param,
+		btVector3 origin,
+		btKinematicCharacterController::EventFunCall eventFunCall = 0,
+		std::string callFun = NULL,
+		btScalar height = btScalar(1.0f), 
+		btScalar weidth = btScalar(1.0f), 
+		btScalar stepHeight = btScalar(0.0),
+		bool useGhostObjectSweepTest = true,
+		int collisionFilterGroup = btBroadphaseProxy::CharacterFilter,
+		int collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::DefaultFilter) 
+	{
+
+		btKinematicCharacterController* character;
+		btPairCachingGhostObject* ghostObject;
+
+		btTransform trans;
+		trans.setIdentity();
+		trans.setOrigin(origin);
+
+		ghostObject = new btPairCachingGhostObject();
+		
+		ghostObject->setWorldTransform(trans);
+		ghostObject->strName = strName;
+
+		btConvexShape* capsule = new btCapsuleShape(height, weidth);
+		ghostObject->setCollisionShape(capsule);
+		m_collisionShapes.push_back(capsule);
+		character = new btKinematicCharacterController(ghostObject, capsule, stepHeight);
+		character->SetUseGhostObjectSweepTest(useGhostObjectSweepTest);
+		character->strName = strName;
+		character->callFun = callFun;
+		character->m_eventFunCall = eventFunCall;
+		character->m_param = param;
+
+		m_character.insert(strName, character);
+		m_ghostObject.insert(strName, ghostObject);
+
+		//向世界中添加碰撞对象   
+		m_dynamicsWorld->addCollisionObject(
+			ghostObject,
+			collisionFilterGroup,
+			collisionFilterMask);
+		m_dynamicsWorld->addAction(character);
+	}
+
+	virtual void removeCharacter(btHashString strName) {
+
+		btPairCachingGhostObject** ghostObject = m_ghostObject.find(strName);
+		m_dynamicsWorld->removeCollisionObject(*ghostObject);
+		m_ghostObject.remove(strName);
+
+		btKinematicCharacterController** character = m_character.find(strName);
+		m_dynamicsWorld->removeCharacter(*character);
+		m_character.remove(strName);
+	}
+
+
+	virtual void move(btHashString strName, unsigned int key) {
+		btKinematicCharacterController** character = m_character.find(strName);
+		(*character)->moveDirection(key);
+	}
+
+	virtual void move(btHashString strName, btVector3 direction) {
+		btKinematicCharacterController** character = m_character.find(strName);
+		(*character)->moveDirection(direction);
 	}
 
 	virtual void createEmptyDynamicsWorld()
@@ -97,6 +196,15 @@ struct CommonRigidBodyBase : public CommonExampleInterface
 		if (m_dynamicsWorld)
 		{
 			int i;
+			if (m_character.size()) {
+				for (i = m_character.size(); i >= 0; i--) {
+					btHashString key = m_character.getKeyAtIndex(i);
+					btKinematicCharacterController** value = m_character.getAtIndex(i);
+					m_dynamicsWorld->removeAction(*value);
+					delete *value;
+				}
+			}
+
 			for (i = m_dynamicsWorld->getNumConstraints() - 1; i >= 0; i--)
 			{
 				m_dynamicsWorld->removeConstraint(m_dynamicsWorld->getConstraint(i));

@@ -18,6 +18,7 @@ subject to the following restrictions:
 #include "btBulletDynamicsCommon.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
+#include "BulletCollision/CollisionDispatch/btGhostObject.h"
 
 #include <stdio.h>  //printf debugging
 
@@ -215,7 +216,7 @@ void RaytestDemo::initPhysics()
 		for (int i = 0; i < NUM_SHAPES; i++)
 			m_collisionShapes.push_back(colShapes[i]);
 
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 7; i++)
 		{
 			//create a few dynamic rigidbodies
 			// Re-using the same collision is better for memory usage and performance
@@ -240,13 +241,37 @@ void RaytestDemo::initPhysics()
 
 			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, 0, colShape, localInertia);
 			rbInfo.m_startWorldTransform = startTransform;
-			btRigidBody* body = new btRigidBody(rbInfo);
-			body->setRollingFriction(0.03);
-			body->setSpinningFriction(0.03);
-			body->setFriction(1);
-			body->setAnisotropicFriction(colShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
 
-			m_dynamicsWorld->addRigidBody(body);
+			if (i == 3) {
+				/*
+				btGhostObject* body = new btGhostObject();
+				body->setWorldTransform(startTransform);
+				body->setCollisionShape(colShapes[5]);
+				body->setRollingFriction(0.03);
+				body->setSpinningFriction(0.03);
+				body->setFriction(1);
+				body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+				body->setAnisotropicFriction(colShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
+
+				m_dynamicsWorld->addCollisionObject(body);
+				*/
+
+				btRigidBody* body = new btRigidBody(rbInfo);
+				body->setRollingFriction(0.03);
+				body->setSpinningFriction(0.03);
+				body->setFriction(1);
+				body->setAnisotropicFriction(colShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
+				body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE | btCollisionObject::CF_KINEMATIC_OBJECT);
+
+				m_dynamicsWorld->addRigidBody(body);
+			} else {
+				btRigidBody* body = new btRigidBody(rbInfo);
+				body->setRollingFriction(0.03);
+				body->setSpinningFriction(0.03);
+				body->setFriction(1);
+				body->setAnisotropicFriction(colShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
+				m_dynamicsWorld->addRigidBody(body);
+			}
 		}
 	}
 

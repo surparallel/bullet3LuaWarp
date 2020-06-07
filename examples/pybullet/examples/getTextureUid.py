@@ -1,8 +1,5 @@
 import pybullet as p
-import pybullet_data
-
 p.connect(p.GUI)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 plane = p.loadURDF("plane.urdf")
 visualData = p.getVisualShapeData(plane, p.VISUAL_SHAPE_DATA_TEXTURE_UNIQUE_IDS)
 print(visualData)

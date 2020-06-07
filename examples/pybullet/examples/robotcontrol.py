@@ -1,8 +1,5 @@
 import pybullet as p
-import pybullet_data
-
-p.connect(p.GUI)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
+p.connect(p.GUI)  #or p.SHARED_MEMORY or p.DIRECT
 
 p.loadURDF("plane.urdf")
 p.setGravity(0, 0, -10)

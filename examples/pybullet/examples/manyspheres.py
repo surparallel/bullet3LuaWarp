@@ -1,13 +1,10 @@
 import pybullet as p
 import time
-import pybullet_data
-
 
 conid = p.connect(p.SHARED_MEMORY)
 if (conid < 0):
   p.connect(p.GUI)
 
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.setInternalSimFlags(0)
 p.resetSimulation()
 

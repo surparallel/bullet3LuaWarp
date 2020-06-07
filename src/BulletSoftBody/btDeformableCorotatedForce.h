@@ -114,8 +114,6 @@ public:
     {
     }
     
-    virtual void buildDampingForceDifferentialDiagonal(btScalar scale, TVStack& diagA){}
-    
     virtual btDeformableLagrangianForceType getForceType()
     {
         return BT_COROTATED_FORCE;

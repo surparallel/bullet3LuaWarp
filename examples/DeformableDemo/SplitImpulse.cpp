@@ -21,15 +21,17 @@
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 #include <stdio.h>  //printf debugging
 
-#include "../CommonInterfaces/CommonDeformableBodyBase.h"
+#include "../CommonInterfaces/CommonRigidBodyBase.h"
 #include "../Utils/b3ResourcePath.h"
 
+#define USE_SPLIT_IMPULSE 1
 ///The SplitImpulse shows the effect of split impulse in deformable rigid contact.
-class SplitImpulse : public CommonDeformableBodyBase
+class SplitImpulse : public CommonRigidBodyBase
 {
+    btAlignedObjectArray<btDeformableLagrangianForce*> m_forces;
 public:
 	SplitImpulse(struct GUIHelperInterface* helper)
-		: CommonDeformableBodyBase(helper)
+		: CommonRigidBodyBase(helper)
 	{
 	}
 	virtual ~SplitImpulse()
@@ -68,9 +70,23 @@ public:
         createRigidBody(mass, startTransform, shape[0]);
     }
     
+    virtual const btDeformableMultiBodyDynamicsWorld* getDeformableDynamicsWorld() const
+    {
+        ///just make it a btSoftRigidDynamicsWorld please
+        ///or we will add type checking
+        return (btDeformableMultiBodyDynamicsWorld*)m_dynamicsWorld;
+    }
+    
+    virtual btDeformableMultiBodyDynamicsWorld* getDeformableDynamicsWorld()
+    {
+        ///just make it a btSoftRigidDynamicsWorld please
+        ///or we will add type checking
+        return (btDeformableMultiBodyDynamicsWorld*)m_dynamicsWorld;
+    }
+    
     virtual void renderScene()
     {
-        CommonDeformableBodyBase::renderScene();
+        CommonRigidBodyBase::renderScene();
         btDeformableMultiBodyDynamicsWorld* deformableWorld = getDeformableDynamicsWorld();
         
         for (int i = 0; i < deformableWorld->getSoftBodyArray().size(); i++)
@@ -145,6 +161,12 @@ void SplitImpulse::initPhysics()
         m_dynamicsWorld->addRigidBody(body);
     }
     
+#ifdef USE_SPLIT_IMPULSE
+        getDeformableDynamicsWorld()->getSolverInfo().m_deformable_erp = 0.03;
+#else
+        getDeformableDynamicsWorld()->getSolverInfo().m_deformable_erp = 0.0;
+#endif
+    
     // create a piece of cloth
     {
         const btScalar s = 4;
@@ -160,14 +182,13 @@ void SplitImpulse::initPhysics()
 //                                                          0, true);
 
         
-        psb->getCollisionShape()->setMargin(0.015);
+        psb->getCollisionShape()->setMargin(0.15);
         psb->generateBendingConstraints(2);
         psb->setTotalMass(1);
         psb->m_cfg.kKHR = 1; // collision hardness with kinematic objects
         psb->m_cfg.kCHR = 1; // collision hardness with rigid body
-        psb->m_cfg.kDF = 1;
+        psb->m_cfg.kDF = 2;
         psb->m_cfg.collisions = btSoftBody::fCollision::SDF_RD;
-        psb->m_cfg.collisions |= btSoftBody::fCollision::SDF_RDF;
         getDeformableDynamicsWorld()->addSoftBody(psb);
         
         btDeformableMassSpringForce* mass_spring = new btDeformableMassSpringForce(30,1, true);
@@ -188,7 +209,7 @@ void SplitImpulse::initPhysics()
 void SplitImpulse::exitPhysics()
 {
 	//cleanup in the reverse order of creation/initialization
-    removePickingConstraint();
+
 	//remove the rigidbodies from the dynamics world and delete them
 	int i;
 	for (i = m_dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--)

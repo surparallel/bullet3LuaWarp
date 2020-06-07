@@ -82,7 +82,6 @@ struct InMemoryFileIO : public CommonFileIOInterface
 				m_numFrees++;
 			}
 		}
-		m_fileCache.clear();
 	}
 
 	char* allocateBuffer(int len)
@@ -320,7 +319,6 @@ struct WrapperFileIO : public CommonFileIOInterface
 		{
 			removeFileIOInterface(i);
 		}
-		m_cachedFiles.clearCache();
 	}
 
 	int addFileIOInterface(CommonFileIOInterface* fileIO)

@@ -112,14 +112,6 @@ struct GraphicsChangeRGBAColorCommand
 	double m_rgbaColor[4];
 };
 
-struct GraphicsChangeScalingCommand
-{
-	int m_graphicsUid;
-	double m_scaling[3];
-};
-
-
-
 struct GraphicsGetCameraInfoStatus
 {
 	int width;
@@ -158,7 +150,6 @@ struct GraphicsSharedMemoryCommand
 		struct GraphicsSyncTransformsCommand m_syncTransformsCommand;
 		struct GraphicsRemoveInstanceCommand m_removeGraphicsInstanceCommand;
 		struct GraphicsChangeRGBAColorCommand m_changeRGBAColorCommand;
-		struct GraphicsChangeScalingCommand m_changeScalingCommand;
 	};
 };
 

@@ -1,9 +1,5 @@
 import numpy as np
-try:
-  import tensorflow.compat.v1 as tf
-except Exception:
-  import tensorflow as tf
-
+import tensorflow as tf
 import copy
 
 from pybullet_envs.deep_mimic.learning.tf_agent import TFAgent

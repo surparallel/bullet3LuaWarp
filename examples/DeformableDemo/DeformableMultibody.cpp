@@ -28,16 +28,17 @@
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletDynamics/Featherstone/btMultiBodyJointFeedback.h"
 
-#include "../CommonInterfaces/CommonDeformableBodyBase.h"
+#include "../CommonInterfaces/CommonMultiBodyBase.h"
 #include "../Utils/b3ResourcePath.h"
 ///The DeformableMultibody demo deformable bodies self-collision
 static bool g_floatingBase = true;
 static float friction = 1.;
-class DeformableMultibody : public CommonDeformableBodyBase
+class DeformableMultibody : public CommonMultiBodyBase
 {
+    btAlignedObjectArray<btDeformableLagrangianForce*> m_forces;
 public:
 	DeformableMultibody(struct GUIHelperInterface* helper)
-    :CommonDeformableBodyBase(helper)
+		: CommonMultiBodyBase(helper)
 	{
 	}
     
@@ -64,9 +65,20 @@ public:
     
     void addColliders_testMultiDof(btMultiBody* pMultiBody, btMultiBodyDynamicsWorld* pWorld, const btVector3& baseHalfExtents, const btVector3& linkHalfExtents);
     
+
+    virtual const btDeformableMultiBodyDynamicsWorld* getDeformableDynamicsWorld() const
+    {
+        return (btDeformableMultiBodyDynamicsWorld*)m_dynamicsWorld;
+    }
+    
+    virtual btDeformableMultiBodyDynamicsWorld* getDeformableDynamicsWorld()
+    {
+        return (btDeformableMultiBodyDynamicsWorld*)m_dynamicsWorld;
+    }
+    
     virtual void renderScene()
     {
-        CommonDeformableBodyBase::renderScene();
+        CommonMultiBodyBase::renderScene();
         btDeformableMultiBodyDynamicsWorld* deformableWorld = getDeformableDynamicsWorld();
         
         for (int i = 0; i < deformableWorld->getSoftBodyArray().size(); i++)
@@ -192,19 +204,17 @@ void DeformableMultibody::initPhysics()
 //                                                         3,3,
                                                          1 + 2 + 4 + 8, true);
 
-        psb->getCollisionShape()->setMargin(0.025);
+        psb->getCollisionShape()->setMargin(0.25);
         psb->generateBendingConstraints(2);
-        psb->setTotalMass(1);
+        psb->setTotalMass(5);
         psb->m_cfg.kKHR = 1; // collision hardness with kinematic objects
         psb->m_cfg.kCHR = 1; // collision hardness with rigid body
-        psb->m_cfg.kDF = 2;
+        psb->m_cfg.kDF = .1;
         psb->m_cfg.collisions = btSoftBody::fCollision::SDF_RD;
-        psb->m_cfg.collisions |= btSoftBody::fCollision::SDF_RDF;
-        psb->m_cfg.collisions |= btSoftBody::fCollision::SDF_MDF;
         psb->setCollisionFlags(0);
         getDeformableDynamicsWorld()->addSoftBody(psb);
 
-        btDeformableMassSpringForce* mass_spring = new btDeformableMassSpringForce(30, 1, true);
+        btDeformableMassSpringForce* mass_spring = new btDeformableMassSpringForce(2, 0.01, false);
         getDeformableDynamicsWorld()->addForce(psb, mass_spring);
         m_forces.push_back(mass_spring);
         
@@ -219,7 +229,7 @@ void DeformableMultibody::initPhysics()
 void DeformableMultibody::exitPhysics()
 {
 	//cleanup in the reverse order of creation/initialization
-    removePickingConstraint();
+
 	//remove the rigidbodies from the dynamics world and delete them
 	int i;
 	for (i = m_dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--)
@@ -341,7 +351,6 @@ void DeformableMultibody::addColliders_testMultiDof(btMultiBody* pMultiBody, btM
         btScalar quat[4] = {-world_to_local[0].x(), -world_to_local[0].y(), -world_to_local[0].z(), world_to_local[0].w()};
         
         btCollisionShape* box = new btBoxShape(baseHalfExtents);
-        box->setMargin(0.01);
         btMultiBodyLinkCollider* col = new btMultiBodyLinkCollider(pMultiBody, -1);
         col->setCollisionShape(box);
         

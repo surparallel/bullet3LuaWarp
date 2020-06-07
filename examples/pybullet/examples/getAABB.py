@@ -1,5 +1,4 @@
 import pybullet as p
-import pybullet_data
 draw = 1
 printtext = 0
 
@@ -7,8 +6,6 @@ if (draw):
   p.connect(p.GUI)
 else:
   p.connect(p.DIRECT)
-
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 r2d2 = p.loadURDF("r2d2.urdf")
 
 

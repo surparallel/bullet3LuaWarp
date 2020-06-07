@@ -1,14 +1,8 @@
-try:
-  import tensorflow.compat.v1 as tf
-except Exception:
-  import tensorflow as tf
+import tensorflow as tf
 import numpy as np
 import os
 
-try:
-  xavier_initializer = tf.contrib.layers.xavier_initializer()
-except Exception:
-  xavier_initializer = None
+xavier_initializer = tf.contrib.layers.xavier_initializer()
 
 
 def disable_gpu():

@@ -5,7 +5,7 @@
 import math
 
 import numpy as np
-import tf.compat.v1 as tf
+import tensorflow as tf
 
 from pybullet_envs.minitaur.envs import minitaur_stand_gym_env
 

@@ -20,10 +20,7 @@ from __future__ import print_function
 import re
 
 import numpy as np
-try:
-  import tensorflow.compat.v1 as tf
-except Exception:
-  import tensorflow as tf
+import tensorflow as tf
 
 
 def count_weights(scope=None, exclude=None, graph=None):

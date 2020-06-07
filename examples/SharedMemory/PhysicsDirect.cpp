@@ -1049,7 +1049,7 @@ void PhysicsDirect::postProcessStatus(const struct SharedMemoryStatus& serverCmd
 
 		case CMD_REQUEST_OPENGL_VISUALIZER_CAMERA_FAILED:
 		{
-			//b3Warning("requestOpenGLVisualizeCamera failed");
+			b3Warning("requestOpenGLVisualizeCamera failed");
 			break;
 		}
 		case CMD_REMOVE_USER_CONSTRAINT_FAILED:
@@ -1244,17 +1244,15 @@ void PhysicsDirect::postProcessStatus(const struct SharedMemoryStatus& serverCmd
 		case CMD_SYNC_USER_DATA_COMPLETED:
 		{
 			B3_PROFILE("CMD_SYNC_USER_DATA_COMPLETED");
-			if (serverCmd.m_syncUserDataArgs.m_clearCachedUserDataEntries) {
-				// Remove all cached user data entries.
-				m_data->m_userDataMap.clear();
-				m_data->m_userDataHandleLookup.clear();
-				for (int i = 0; i < m_data->m_bodyJointMap.size(); i++)
+			// Remove all cached user data entries.
+			m_data->m_userDataMap.clear();
+			m_data->m_userDataHandleLookup.clear();
+			for (int i = 0; i < m_data->m_bodyJointMap.size(); i++)
+			{
+				BodyJointInfoCache2** bodyJointsPtr = m_data->m_bodyJointMap.getAtIndex(i);
+				if (bodyJointsPtr && *bodyJointsPtr)
 				{
-					BodyJointInfoCache2** bodyJointsPtr = m_data->m_bodyJointMap.getAtIndex(i);
-					if (bodyJointsPtr && *bodyJointsPtr)
-					{
-						(*bodyJointsPtr)->m_userDataIds.clear();
-					}
+					(*bodyJointsPtr)->m_userDataIds.clear();
 				}
 			}
 			const int numIdentifiers = serverCmd.m_syncUserDataArgs.m_numUserDataIdentifiers;

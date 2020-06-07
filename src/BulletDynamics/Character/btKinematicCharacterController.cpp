@@ -14,6 +14,7 @@ subject to the following restrictions:
 */
 
 #include <stdio.h>
+#include <math.h>
 #include "LinearMath/btIDebugDraw.h"
 #include "BulletCollision/CollisionDispatch/btGhostObject.h"
 #include "BulletCollision/CollisionShapes/btMultiSphereShape.h"
@@ -22,6 +23,7 @@ subject to the following restrictions:
 #include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
 #include "LinearMath/btDefaultMotionState.h"
 #include "btKinematicCharacterController.h"
+#include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 
 // static helper method
 static btVector3
@@ -131,11 +133,16 @@ btVector3 btKinematicCharacterController::perpindicularComponent(const btVector3
 	return direction - parallelComponent(direction, normal);
 }
 
+void btKinematicCharacterController::SetUseGhostObjectSweepTest(bool useGhostObjectSweepTest)
+{
+	m_useGhostObjectSweepTest = useGhostObjectSweepTest;
+}
+
 btKinematicCharacterController::btKinematicCharacterController(btPairCachingGhostObject* ghostObject, btConvexShape* convexShape, btScalar stepHeight, const btVector3& up)
 {
 	m_ghostObject = ghostObject;
-	m_up.setValue(0.0f, 0.0f, 1.0f);
-	m_jumpAxis.setValue(0.0f, 0.0f, 1.0f);
+	m_up.setValue(0.0f, 1.0f, 0.0f);
+	m_jumpAxis.setValue(0.0f, 1.0f, 0.0f);
 	m_addedMargin = 0.02;
 	m_walkDirection.setValue(0.0, 0.0, 0.0);
 	m_AngVel.setValue(0.0, 0.0, 0.0);
@@ -159,6 +166,11 @@ btKinematicCharacterController::btKinematicCharacterController(btPairCachingGhos
 	bounce_fix = false;
 	m_linearDamping = btScalar(0.0);
 	m_angularDamping = btScalar(0.0);
+
+	m_isdirection = false;
+	m_key = 0;
+	m_walkVelocity = btScalar(1.1) * 4.0; // 4 km/h -> 1.1 m/s
+	m_eventFunCall = 0;
 
 	setUp(up);
 	setStepHeight(stepHeight);
@@ -370,6 +382,7 @@ void btKinematicCharacterController::updateTargetPositionBasedOnCollision(const 
 
 		if (normalMag != 0.0)
 		{
+			///因为碰撞导致预期结果不同
 			btVector3 perpComponent = perpindicularDir * btScalar(normalMag * movementLength);
 			//			printf("perpComponent=%f,%f,%f\n",perpComponent[0],perpComponent[1],perpComponent[2]);
 			m_targetPosition += perpComponent;
@@ -438,6 +451,7 @@ void btKinematicCharacterController::stepForwardAndStrafe(btCollisionWorld* coll
 
 			//			m_currentPosition.setInterpolate3 (m_currentPosition, m_targetPosition, callback.m_closestHitFraction);
 
+			//通过key 移动导致二次检测因为穿过失败而穿模得问题.
 			updateTargetPositionBasedOnCollision(callback.m_hitNormalWorld);
 			btVector3 currentDir = m_targetPosition - m_currentPosition;
 			distance2 = currentDir.length2();
@@ -615,6 +629,204 @@ void btKinematicCharacterController::setWalkDirection(
 	m_normalizedDirection = getNormalizedVector(m_walkDirection);
 }
 
+void btKinematicCharacterController::moveDirection(btCollisionWorld * collisionWorld, unsigned int key, btScalar deltaTime) {
+
+	///设置行走方向
+	btTransform xform;
+	xform = m_ghostObject->getWorldTransform();
+	//获取本地坐标向量,并且单位化
+	btVector3 forwardDir = xform.getBasis()[2];
+	btVector3 upDir = xform.getBasis()[1];
+	btVector3 strafeDir = xform.getBasis()[0];
+	forwardDir.normalize();
+	upDir.normalize();
+	strafeDir.normalize();
+
+	btVector3 walkDirection = btVector3(0.0, 0.0, 0.0);
+	btScalar walkSpeed = m_walkVelocity * deltaTime * 2.0f;
+
+	//控制前后行走,以及旋转方向,
+	if (key & KEY_CONTROL::KC_RIGHT)
+	{
+		float yaw = 0.05f;
+		btMatrix3x3 orn = m_ghostObject->getWorldTransform().getBasis();
+		orn *= btMatrix3x3(btQuaternion(btVector3(0, 1, 0), yaw));
+		m_ghostObject->getWorldTransform().setBasis(orn);
+	}
+
+	if (key & KEY_CONTROL::KC_LEFT)
+	{
+		float yaw = -0.05f;
+		btMatrix3x3 orn = m_ghostObject->getWorldTransform().getBasis();
+		orn *= btMatrix3x3(btQuaternion(btVector3(0, 1, 0), yaw));
+		m_ghostObject->getWorldTransform().setBasis(orn);
+	}
+
+	if (key & KEY_CONTROL::KC_UP)
+	{
+		walkDirection += forwardDir;
+	}
+
+	if (key & KEY_CONTROL::KC_DOWN)
+	{
+		walkDirection -= forwardDir;
+	}
+
+	if (key & KEY_CONTROL::KC_SPACE && canJump() && !m_wasJumping)
+	{
+		jump();
+	}
+
+	//按照方向移动角色
+	setWalkDirection(walkDirection * walkSpeed);
+}
+
+btVector3 btKinematicCharacterController::LookAtRotation(const btVector3 lookHere) const
+{
+	btTransform xform;
+	xform = m_ghostObject->getWorldTransform();
+
+	btVector3 diff = lookHere - xform.getOrigin();
+	float xzdistance = sqrt(diff.getX() * diff.getX() + diff.getZ() * diff.getZ());
+	float x = (-atan2((float)diff.getY(), xzdistance)); // rotation around x
+	float y = (atan2(diff.getX(), diff.getZ())); // rotation around y
+	float z = (0); // rotation around z
+
+	return btVector3(x, y, z);
+}
+
+void btKinematicCharacterController::moveDirection(btCollisionWorld * collisionWorld, btVector3 direction, btScalar deltaTime) {
+
+	///设置行走方向
+	btTransform xform;
+	xform = m_ghostObject->getWorldTransform();
+	//获取本地坐标向量,并且单位化
+	btVector3 forwardDir = xform.getBasis()[2];
+	
+	btScalar dorn = direction.angle(forwardDir);
+	btVector3 upDir = xform.getBasis()[1];
+	btVector3 strafeDir = xform.getBasis()[0];
+	forwardDir.normalize();
+	upDir.normalize();
+	strafeDir.normalize();
+
+	btVector3 walkDirection = btVector3(0.0, 0.0, 0.0);
+	btScalar walkSpeed = m_walkVelocity * deltaTime * 2.0f;
+	btVector3 norn = direction - xform.getOrigin();
+	norn.setY(0);
+	
+	//控制前后行走,以及旋转方向,
+/*	if (m_look == 0 && dorn <= -0.05f)
+	{
+		float yaw = 0.05f;
+		btMatrix3x3 orn = m_ghostObject->getWorldTransform().getBasis();
+		orn *= btMatrix3x3(btQuaternion(btVector3(0, 1, 0), yaw));
+		m_ghostObject->getWorldTransform().setBasis(orn);
+	} else if (m_look == 0 && dorn >= 0.05f) {
+		float yaw = -0.05f;
+		btMatrix3x3 orn = m_ghostObject->getWorldTransform().getBasis();
+		orn *= btMatrix3x3(btQuaternion(btVector3(0, 1, 0), yaw));
+		m_ghostObject->getWorldTransform().setBasis(orn);
+	} else *///if (m_look == 0 || btQuaternion::LookRotation(btVector3(norn)).inverse() != btQuaternion::LookRotation(btVector3(m_norn)).inverse()) {
+	/*
+	if (m_look == 1 && m_norn.length() == norn.length())
+	{
+		if (m_nornCount-- == 0) {
+			//stop call back
+			m_isdirection = false;
+			m_useWalkDirection = false;
+
+			if (m_eventFunCall) {
+				m_eventFunCall(m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
+			}
+			return;
+		} else {
+			m_norn = norn;
+			walkDirection += forwardDir;
+		}
+	} else if (m_look == 1 && norn.length() < 0.8) {
+			//stop call back
+			m_isdirection = false;
+			m_useWalkDirection = false;
+			if (m_eventFunCall) {
+				m_eventFunCall(m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
+			}
+			return;
+	} else {
+		m_nornCount = 10;
+		m_norn = norn;
+		walkDirection += forwardDir;
+	}*/
+
+	if (m_look == 0 || std::abs(btQuaternion::LookRotation(btVector3(norn)).getAngle() - btQuaternion::LookRotation(btVector3(m_norn)).getAngle()) > 0.001) {
+		m_look = 1;
+		m_norn = norn;
+		m_nornCount = 3;
+
+		btMatrix3x3 orn = btMatrix3x3(btQuaternion::LookRotation(btVector3(norn)).inverse());
+		m_ghostObject->getWorldTransform().setBasis(orn);
+
+		if (m_eventFunCall) {
+			m_eventFunCall(this, m_param, EC_DIR, xform.getOrigin(), direction, m_ghostObject->getWorldTransform().getRotation().getAngle());
+		}
+	}
+
+	if (m_look == 1 && std::abs(m_norn.length() - norn.length()) < 0.001)
+	{
+		if (m_nornCount-- == 0) {
+			//stop call back
+			m_isdirection = false;
+			m_useWalkDirection = false;
+
+			if (m_eventFunCall) {
+				m_eventFunCall(this, m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
+			}
+			return;
+		} else {
+			m_norn = norn;
+			walkDirection += forwardDir;
+		}
+	} else if (m_look == 1 && norn.length() < 0.8) {
+		//stop call back
+		m_isdirection = false;
+		m_useWalkDirection = false;
+		if (m_eventFunCall) {
+			m_eventFunCall(this, m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
+		}
+		return;
+	} else {
+		m_nornCount = 10;
+		m_norn = norn;
+		walkDirection += forwardDir;
+	}
+
+	//按照方向移动角色
+	setWalkDirection(walkDirection * walkSpeed);
+}
+
+void btKinematicCharacterController::moveDirection(btVector3 direction) {
+	m_isdirection = true;
+	m_look = 0;
+	m_direction = direction;
+	m_nornLength = (direction - m_ghostObject->getWorldTransform().getOrigin()).length();
+	m_nornCount = 3;
+}
+
+void btKinematicCharacterController::moveDirection(unsigned int key) {
+
+	btTransform xform;
+	xform = m_ghostObject->getWorldTransform();
+
+	m_isdirection = false;
+	if (key == KC_NULL) {
+		m_useWalkDirection = false;
+		if (m_eventFunCall) {
+			m_eventFunCall(this, m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
+		}
+	}
+	m_key = key;
+}
+
 void btKinematicCharacterController::setVelocityForTimeInterval(
 	const btVector3& velocity,
 	btScalar timeInterval)
@@ -773,8 +985,11 @@ void btKinematicCharacterController::playerStep(btCollisionWorld* collisionWorld
 
 	//	printf("walkDirection(%f,%f,%f)\n",walkDirection[0],walkDirection[1],walkDirection[2]);
 	//	printf("walkSpeed=%f\n",walkSpeed);
-
-	stepUp(collisionWorld);
+	
+	if (m_wasJumping) {
+		stepUp(collisionWorld);
+	}
+	
 	//todo: Experimenting with behavior of controller when it hits a ceiling..
 	//bool hitUp = stepUp (collisionWorld);
 	//if (hitUp)
@@ -813,8 +1028,11 @@ void btKinematicCharacterController::playerStep(btCollisionWorld* collisionWorld
 		// okay, step
 		stepForwardAndStrafe(collisionWorld, move);
 	}
-	stepDown(collisionWorld, dt);
 
+	if (!m_wasOnGround) {
+		stepDown(collisionWorld, dt);
+	}
+	
 	//todo: Experimenting with max jump height
 	//if (m_wasJumping)
 	//{
@@ -831,6 +1049,10 @@ void btKinematicCharacterController::playerStep(btCollisionWorld* collisionWorld
 	//	}
 	//}
 	// printf("\n");
+
+	if (m_key != KC_NULL && m_eventFunCall) {
+		m_eventFunCall(this, m_param, EC_KEY, xform.getOrigin(), m_currentPosition, xform.getRotation().getAngle());
+	}
 
 	xform.setOrigin(m_currentPosition);
 	m_ghostObject->setWorldTransform(xform);
@@ -927,6 +1149,23 @@ btScalar btKinematicCharacterController::getMaxPenetrationDepth() const
 bool btKinematicCharacterController::onGround() const
 {
 	return (fabs(m_verticalVelocity) < SIMD_EPSILON) && (fabs(m_verticalOffset) < SIMD_EPSILON);
+}
+
+bool btKinematicCharacterController::onGround(btCollisionWorld * collisionWorld) const
+{
+	return (fabs(m_verticalVelocity) < SIMD_EPSILON) && (fabs(m_verticalOffset) < SIMD_EPSILON);
+
+	btTransform trans = m_ghostObject->getWorldTransform();
+	btCollisionShape* collisionShape = m_ghostObject->getCollisionShape();
+	btVector3 from = trans.getOrigin() - btVector3(0.0, 0.6, 0.0);
+	btVector3 to = from;
+	to -= btVector3(0, 1.0, 0);
+
+	btCollisionWorld::ClosestRayResultCallback closestResults(from, to);
+	closestResults.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+	collisionWorld->rayTest(from, to, closestResults);
+
+	return closestResults.hasHit();
 }
 
 void btKinematicCharacterController::setStepHeight(btScalar h)

@@ -10,8 +10,6 @@ import subprocess
 import numpy as np
 import pybullet
 from multiprocessing import Process
-import pybullet_data
-
 
 camTargetPos = [0, 0, 0]
 cameraUp = [0, 0, 1]
@@ -43,7 +41,6 @@ class BulletSim():
 
     print(self.connection_mode, optionstring, *self.argv)
     cid = pybullet.connect(self.connection_mode, options=optionstring, *self.argv)
-    pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())
     if cid < 0:
       raise ValueError
     print("connected")

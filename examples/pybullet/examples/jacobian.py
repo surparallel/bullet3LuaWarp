@@ -1,6 +1,4 @@
 import pybullet as p
-import pybullet_data
-
 
 
 def getJointStates(robot):
@@ -52,8 +50,6 @@ def multiplyJacobian(robot, jacobian, vector):
 clid = p.connect(p.SHARED_MEMORY)
 if (clid < 0):
   p.connect(p.DIRECT)
-
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
 time_step = 0.001
 gravity_constant = -9.81

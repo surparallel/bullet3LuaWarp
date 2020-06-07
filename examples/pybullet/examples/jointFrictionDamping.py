@@ -1,10 +1,7 @@
 import pybullet as p
 import time
 
-import pybullet_data
-
 p.connect(p.GUI)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.loadURDF("plane.urdf", [0, 0, -0.25])
 minitaur = p.loadURDF("quadruped/minitaur_single_motor.urdf", useFixedBase=True)
 print(p.getNumJoints(minitaur))

@@ -21,6 +21,8 @@ subject to the following restrictions:
 #include "LinearMath/btAlignedAllocator.h"
 #include "BulletCollision/BroadphaseCollision/btOverlappingPairCache.h"
 #include "btCollisionWorld.h"
+#include "BulletDynamics/Character/btKinematicCharacterController.h"
+#include "LinearMath/btHashMap.h"
 
 class btConvexShape;
 
@@ -96,8 +98,9 @@ public:
 class btPairCachingGhostObject : public btGhostObject
 {
 	btHashedOverlappingPairCache* m_hashPairCache;
-
 public:
+	btHashString strName;
+
 	btPairCachingGhostObject();
 
 	virtual ~btPairCachingGhostObject();

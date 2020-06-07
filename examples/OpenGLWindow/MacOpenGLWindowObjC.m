@@ -190,7 +190,7 @@ void dumpInfo(void)
 	
 	[m_context setView: self];
 	[m_context makeCurrentContext];
-	[m_context update];
+	
 	// Draw
 	//display();
 	
@@ -240,14 +240,13 @@ void dumpInfo(void)
 	m_context = [[NSOpenGLContext alloc] initWithFormat: fmt shareContext: nil];
 	[fmt release];
 	[m_context makeCurrentContext];
-	[m_context update];
+    
 	//checkError("makeCurrentContext");
 }
 
 -(void) MakeCurrent
 {
-	[m_context makeCurrentContext];
-	[m_context update];
+    [m_context makeCurrentContext];
 }
 -(void)windowWillClose:(NSNotification *)note
 {
@@ -1178,7 +1177,7 @@ int Mac_fileOpenDialog(char* filename, int maxNameLength)
     NSInteger zIntResult = [zOpenPanel runModal];
     
     [foo makeCurrentContext];
-    [foo update];
+    
     if (zIntResult == NSFileHandlingPanelCancelButton) {
         NSLog(@"readUsingOpenPanel cancelled");
         return 0;

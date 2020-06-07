@@ -1,8 +1,5 @@
 import pybullet as p
-import pybullet_data
-
 p.connect(p.GUI)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 cube = p.loadURDF("cube.urdf")
 frequency = 240
 timeStep = 1. / frequency

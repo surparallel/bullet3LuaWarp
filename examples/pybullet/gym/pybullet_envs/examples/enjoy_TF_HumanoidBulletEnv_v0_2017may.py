@@ -43,15 +43,16 @@ def main():
     obs = env.reset()
 
     while 1:
-      time.sleep(1. / 60.)
       a = pi.act(obs)
       obs, r, done, _ = env.step(a)
       score += r
       frame += 1
+      time.sleep(1. / 60.)
+
       still_open = env.render("human")
       if still_open == False:
         return
-      continue
+      if not done: continue
       if restart_delay == 0:
         print("score=%0.2f in %i frames" % (score, frame))
         restart_delay = 60 * 2  # 2 sec at 60 fps

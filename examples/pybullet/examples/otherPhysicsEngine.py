@@ -2,7 +2,6 @@ import pybullet as p
 import pybullet_data as pd
 import time
 import math
-import pybullet_data
 
 usePhysX = True
 useMaximalCoordinates = True
@@ -12,7 +11,6 @@ if usePhysX:
 else:
   p.connect(p.GUI)
 
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.setPhysicsEngineParameter(fixedTimeStep=1. / 240.,
                             numSolverIterations=4,
                             minimumSolverIslandSize=1024)

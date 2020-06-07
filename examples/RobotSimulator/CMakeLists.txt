@@ -18,7 +18,6 @@ RobotSimulatorMain.cpp
 	../SharedMemory/GraphicsServerExample.cpp
 	../SharedMemory/GraphicsClientExample.cpp
 	../SharedMemory/RemoteGUIHelper.cpp
-        ../SharedMemory/RemoteGUIHelperTCP.cpp
 	../SharedMemory/GraphicsServerExample.h
 	../SharedMemory/GraphicsClientExample.h
 	../SharedMemory/RemoteGUIHelper.h
@@ -33,7 +32,6 @@ RobotSimulatorMain.cpp
 
 IF(BUILD_CLSOCKET)
  ADD_DEFINITIONS(-DBT_ENABLE_CLSOCKET)
- ADD_DEFINITIONS(${OSDEF})
 ENDIF(BUILD_CLSOCKET)
 
 

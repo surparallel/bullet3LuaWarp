@@ -1,9 +1,6 @@
 import numpy as np
 import copy
-try:
-  import tensorflow.compat.v1 as tf
-except Exception:
-  import tensorflow as tf
+import tensorflow as tf
 from pybullet_envs.deep_mimic.learning.normalizer import Normalizer
 
 

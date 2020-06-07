@@ -243,7 +243,7 @@ void Jacobian::UpdateThetaDot()
 	m_tree->Compute();
 }
 
-void Jacobian::CalcDeltaThetas(MatrixRmn& AugMat)
+void Jacobian::CalcDeltaThetas()
 {
 	switch (CurrentUpdateMode)
 	{
@@ -257,7 +257,7 @@ void Jacobian::CalcDeltaThetas(MatrixRmn& AugMat)
 			CalcDeltaThetasPseudoinverse();
 			break;
 		case JACOB_DLS:
-			CalcDeltaThetasDLS(AugMat);
+			CalcDeltaThetasDLS();
 			break;
 		case JACOB_SDLS:
 			CalcDeltaThetasSDLS();
@@ -327,7 +327,7 @@ void Jacobian::CalcDeltaThetasPseudoinverse()
 	}
 }
 
-void Jacobian::CalcDeltaThetasDLSwithNullspace(const VectorRn& desiredV, MatrixRmn& AugMat)
+void Jacobian::CalcDeltaThetasDLSwithNullspace(const VectorRn& desiredV)
 {
 	const MatrixRmn& J = ActiveJacobian();
 
@@ -341,7 +341,7 @@ void Jacobian::CalcDeltaThetasDLSwithNullspace(const VectorRn& desiredV, MatrixR
 	// J.MultiplyTranspose( dTextra, dTheta );
 
 	// Use these two lines for the traditional DLS method
-	U.Solve(dS, &dT1, AugMat);
+	U.Solve(dS, &dT1);
 	J.MultiplyTranspose(dT1, dTheta);
 
 	// Compute JInv in damped least square form
@@ -379,7 +379,7 @@ void Jacobian::CalcDeltaThetasDLSwithNullspace(const VectorRn& desiredV, MatrixR
 	}
 }
 
-void Jacobian::CalcDeltaThetasDLS(MatrixRmn& AugMat)
+void Jacobian::CalcDeltaThetasDLS()
 {
 	const MatrixRmn& J = ActiveJacobian();
 
@@ -393,7 +393,7 @@ void Jacobian::CalcDeltaThetasDLS(MatrixRmn& AugMat)
 	// J.MultiplyTranspose( dTextra, dTheta );
 
 	// Use these two lines for the traditional DLS method
-	U.Solve(dS, &dT1, AugMat);
+	U.Solve(dS, &dT1);
 	J.MultiplyTranspose(dT1, dTheta);
 
 	// Scale back to not exceed maximum angle changes
@@ -404,7 +404,7 @@ void Jacobian::CalcDeltaThetasDLS(MatrixRmn& AugMat)
 	}
 }
 
-void Jacobian::CalcDeltaThetasDLS2(const VectorRn& dVec, MatrixRmn& AugMat)
+void Jacobian::CalcDeltaThetasDLS2(const VectorRn& dVec)
 {
 	const MatrixRmn& J = ActiveJacobian();
 
@@ -414,7 +414,7 @@ void Jacobian::CalcDeltaThetasDLS2(const VectorRn& dVec, MatrixRmn& AugMat)
 
 	dT1.SetLength(J.GetNumColumns());
 	J.MultiplyTranspose(dS, dT1);
-	U.Solve(dT1, &dTheta, AugMat);
+	U.Solve(dT1, &dTheta);
 
 	// Scale back to not exceed maximum angle changes
 	double maxChange = dTheta.MaxAbs();

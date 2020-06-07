@@ -17,7 +17,8 @@ subject to the following restrictions:
 #include "../CommonInterfaces/CommonGUIHelperInterface.h"
 #include "../Utils/b3Clock.h"
 
-#include "../OpenGLWindow/SimpleOpenGL3App.h"
+#include "../OpenGLWindow/SimpleOpenGL2App.h"
+#include "../OpenGLWindow/SimpleOpenGL2Renderer.h"
 #include <stdio.h>
 #include "../ExampleBrowser/OpenGLGuiHelper.h"
 
@@ -66,7 +67,8 @@ public:
 };
 int main(int argc, char* argv[])
 {
-	SimpleOpenGL3App* app = new SimpleOpenGL3App("Bullet Standalone Example", 1024, 768, true);
+	SimpleOpenGL2App* app = new SimpleOpenGL2App("Bullet Standalone Example", 1024, 768);
+	app->m_renderer = new SimpleOpenGL2Renderer(1024, 768);
 
 	prevMouseButtonCallback = app->m_window->getMouseButtonCallback();
 	prevMouseMoveCallback = app->m_window->getMouseMoveCallback();
@@ -90,8 +92,8 @@ int main(int argc, char* argv[])
 
 	do
 	{
-		app->m_instancingRenderer->init();
-		app->m_instancingRenderer->updateCamera(app->getUpAxis());
+		app->m_renderer->init();
+		app->m_renderer->updateCamera(app->getUpAxis());
 
 		btScalar dtSec = btScalar(clock.getTimeInSeconds());
 		if (dtSec > 0.1)

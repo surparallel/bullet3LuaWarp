@@ -2,10 +2,8 @@ import pybullet as p
 import math
 import time
 dt = 1./240.
-import pybullet_data
 
-p.connect(p.GUI)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
+p.connect(p.GUI)#SHARED_MEMORY_GUI)
 p.loadURDF("r2d2.urdf",[0,0,1])
 p.loadURDF("plane.urdf")
 p.setGravity(0,0,-10)

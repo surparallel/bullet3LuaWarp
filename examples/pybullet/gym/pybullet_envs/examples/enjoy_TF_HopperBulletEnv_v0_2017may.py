@@ -51,6 +51,7 @@ def main():
       obs, r, done, _ = env.step(a)
       score += r
       frame += 1
+
       still_open = env.render("human")
       if still_open == False:
         return

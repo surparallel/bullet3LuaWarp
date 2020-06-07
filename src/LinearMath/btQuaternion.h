@@ -605,6 +605,67 @@ public:
 		}
 	}
 
+	static btQuaternion LookRotation(btVector3 forward)
+	{
+		return LookRotation(forward, btVector3(0, 1, 0));
+	}
+
+	static btQuaternion LookRotation(btVector3 forward, btVector3 up)
+	{
+		forward.normalize();
+		btVector3 right = up.cross(forward).normalize();
+		up = forward.cross(right);
+		float m00 = right.getX();
+		float m01 = right.getY();
+		float m02 = right.getZ();
+		float m10 = up.getX();
+		float m11 = up.getY();
+		float m12 = up.getZ();
+		float m20 = forward.getX();
+		float m21 = forward.getY();
+		float m22 = forward.getZ();
+
+
+		float num8 = (m00 + m11) + m22;
+		if (num8 > 0)
+		{
+			float num = sqrt(num8 + 1);
+			float w = num * 0.5f;
+			num = 0.5f / num;
+			float x = (m12 - m21) * num;
+			float y = (m20 - m02) * num;
+			float z = (m01 - m10) * num;
+			return btQuaternion(x, y, z, w);
+		}
+		if ((m00 >= m11) && (m00 >= m22))
+		{
+			float num7 = sqrt(((1 + m00) - m11) - m22);
+			float num4 = 0.5f / num7;
+			float x = 0.5f * num7;
+			float y = (m01 + m10) * num4;
+			float z = (m02 + m20) * num4;
+			float w = (m12 - m21) * num4;
+			return btQuaternion(x, y, z, w);
+		}
+		if (m11 > m22)
+		{
+			float num6 = sqrt(((1 + m11) - m00) - m22);
+			float num3 = 0.5f / num6;
+			float x = (m10 + m01) * num3;
+			float y = 0.5f * num6;
+			float z = (m21 + m12) * num3;
+			float w = (m20 - m02) * num3;
+			return btQuaternion(x, y, z, w);
+		}
+		float num5 = sqrt(((1 + m22) - m00) - m11);
+		float num2 = 0.5f / num5;
+		float x = (m20 + m02) * num2;
+		float y = (m21 + m12) * num2;
+		float z = 0.5f * num5;
+		float w = (m01 - m10) * num2;
+		return btQuaternion(x, y, z, w);
+	}
+
 	static const btQuaternion& getIdentity()
 	{
 		static const btQuaternion identityQuat(btScalar(0.), btScalar(0.), btScalar(0.), btScalar(1.));

@@ -19,7 +19,7 @@ subject to the following restrictions:
 #include "LinearMath/btVector3.h"
 
 #include "btCharacterControllerInterface.h"
-
+#include "LinearMath/btHashMap.h"
 #include "BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h"
 
 class btCollisionShape;
@@ -95,6 +95,15 @@ protected:
 	bool full_drop;
 	bool bounce_fix;
 
+	bool m_isdirection;
+	btVector3 m_direction;
+	int m_look;
+	float m_nornLength;
+	btVector3 m_norn;
+	int m_nornCount;
+
+	int m_key;
+
 	btVector3 computeReflectionDirection(const btVector3& direction, const btVector3& normal);
 	btVector3 parallelComponent(const btVector3& direction, const btVector3& normal);
 	btVector3 perpindicularComponent(const btVector3& direction, const btVector3& normal);
@@ -112,14 +121,44 @@ protected:
 	btQuaternion getRotation(btVector3 & v0, btVector3 & v1) const;
 
 public:
+	btHashString strName;
+	std::string callFun;
+
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
-	btKinematicCharacterController(btPairCachingGhostObject * ghostObject, btConvexShape * convexShape, btScalar stepHeight, const btVector3& up = btVector3(1.0, 0.0, 0.0));
+	btKinematicCharacterController(btPairCachingGhostObject * ghostObject, btConvexShape * convexShape, btScalar stepHeight, const btVector3& up = btVector3(0.0, 1.0, 0.0));
 	~btKinematicCharacterController();
+
+	enum KEY_CONTROL {
+		KC_NULL = 0,
+		KC_RIGHT = 1,
+		KC_LEFT = 2,
+		KC_UP = 4,
+		KC_DOWN = 8,
+		KC_SPACE = 16
+	};
+
+	enum EVENT_CONTROL {
+		EC_DIR= 1,
+		EC_KEY = 2,
+		EC_STOP = 3,
+	};
+
+	typedef void(*EventFunCall)(void* character, void* m_param, EVENT_CONTROL ec, btVector3 start, btVector3 end, btScalar angle);
+	
+	btScalar m_walkVelocity;
+	EventFunCall m_eventFunCall;
+	void* m_param;
 
 	///btActionInterface interface
 	virtual void updateAction(btCollisionWorld * collisionWorld, btScalar deltaTime)
 	{
+		if (m_key == KC_NULL && m_isdirection && m_wasOnGround && !m_wasJumping) {
+			moveDirection(collisionWorld, m_direction, deltaTime);
+		} else if (m_key != KC_NULL && !m_isdirection && m_wasOnGround && !m_wasJumping) {
+			moveDirection(collisionWorld, m_key, deltaTime);
+		}
+
 		preStep(collisionWorld);
 		playerStep(collisionWorld, deltaTime);
 	}
@@ -195,6 +234,17 @@ public:
 
 	bool onGround() const;
 	void setUpInterpolate(bool value);
+
+	void moveDirection(btCollisionWorld * collisionWorld, unsigned int key, btScalar deltaTime);
+	void moveDirection(btCollisionWorld * collisionWorld, btVector3 direction, btScalar deltaTime);
+	void moveDirection(btVector3 direction);
+	void moveDirection(unsigned int key);
+
+	bool onGround(btCollisionWorld * collisionWorld) const;
+	btVector3 LookAtRotation(const btVector3 lookHere) const;
+
+	void SetUseGhostObjectSweepTest(bool useGhostObjectSweepTest);
+
 };
 
 #endif  // BT_KINEMATIC_CHARACTER_CONTROLLER_H

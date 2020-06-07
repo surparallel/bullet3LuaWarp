@@ -22,16 +22,17 @@
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 #include <stdio.h>  //printf debugging
 
-#include "../CommonInterfaces/CommonDeformableBodyBase.h"
+#include "../CommonInterfaces/CommonRigidBodyBase.h"
 #include "../Utils/b3ResourcePath.h"
 
 ///The DeformableContact shows the contact between deformable objects
 
-class DeformableContact : public CommonDeformableBodyBase
+class DeformableContact : public CommonRigidBodyBase
 {
+    btAlignedObjectArray<btDeformableLagrangianForce*> m_forces;
 public:
     DeformableContact(struct GUIHelperInterface* helper)
-    : CommonDeformableBodyBase(helper)
+    : CommonRigidBodyBase(helper)
     {
     }
     virtual ~DeformableContact()
@@ -56,9 +57,19 @@ public:
         m_dynamicsWorld->stepSimulation(deltaTime, 4, internalTimeStep);
     }
     
+    virtual const btDeformableMultiBodyDynamicsWorld* getDeformableDynamicsWorld() const
+    {
+        return (btDeformableMultiBodyDynamicsWorld*)m_dynamicsWorld;
+    }
+    
+    virtual btDeformableMultiBodyDynamicsWorld* getDeformableDynamicsWorld()
+    {
+        return (btDeformableMultiBodyDynamicsWorld*)m_dynamicsWorld;
+    }
+    
     virtual void renderScene()
     {
-        CommonDeformableBodyBase::renderScene();
+        CommonRigidBodyBase::renderScene();
         
 		
 		btDeformableMultiBodyDynamicsWorld* deformableWorld = getDeformableDynamicsWorld();
@@ -143,15 +154,13 @@ void DeformableContact::initPhysics()
                                                          20,20,
                                                          1 + 2 + 4 + 8, true);
         
-        psb->getCollisionShape()->setMargin(0.05);
+        psb->getCollisionShape()->setMargin(0.1);
         psb->generateBendingConstraints(2);
-        psb->setSpringStiffness(10);
         psb->setTotalMass(1);
         psb->m_cfg.kKHR = 1; // collision hardness with kinematic objects
         psb->m_cfg.kCHR = 1; // collision hardness with rigid body
         psb->m_cfg.kDF = 0;
         psb->m_cfg.collisions = btSoftBody::fCollision::SDF_RD;
-        psb->m_cfg.collisions |= btSoftBody::fCollision::SDF_RDF;
         psb->m_cfg.collisions |= btSoftBody::fCollision::VF_DD;
         getDeformableDynamicsWorld()->addSoftBody(psb);
         
@@ -172,15 +181,13 @@ void DeformableContact::initPhysics()
                                                           btVector3(+s, h, +s),
                                                           10,10,
                                                           0, true);
-        psb2->getCollisionShape()->setMargin(0.05);
+        psb2->getCollisionShape()->setMargin(0.1);
         psb2->generateBendingConstraints(2);
-        psb2->setSpringStiffness(10);
         psb2->setTotalMass(1);
         psb2->m_cfg.kKHR = 1; // collision hardness with kinematic objects
         psb2->m_cfg.kCHR = 1; // collision hardness with rigid body
         psb2->m_cfg.kDF = 0.5;
         psb2->m_cfg.collisions = btSoftBody::fCollision::SDF_RD;
-        psb2->m_cfg.collisions |= btSoftBody::fCollision::SDF_RDF;
         psb2->m_cfg.collisions |= btSoftBody::fCollision::VF_DD;
         psb->translate(btVector3(3.5,0,0));
         getDeformableDynamicsWorld()->addSoftBody(psb2);
@@ -209,7 +216,7 @@ void DeformableContact::initPhysics()
 void DeformableContact::exitPhysics()
 {
     //cleanup in the reverse order of creation/initialization
-    removePickingConstraint();
+    
     //remove the rigidbodies from the dynamics world and delete them
     int i;
     for (i = m_dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--)
