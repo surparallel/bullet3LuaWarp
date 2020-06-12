@@ -46,7 +46,7 @@ struct BasicExample : public CommonRigidBodyBase
 	}
 };
 
-void bullet3_eventFunCall(void* m_param, btKinematicCharacterController::EVENT_CONTROL ec, btVector3 start, btVector3 end, btScalar angle) {
+void bullet3_eventFunCall(void* character, void* m_param, btKinematicCharacterController::EVENT_CONTROL ec, btVector3& start, btVector3& end, btScalar angle) {
 
 	int a = 0;
 }

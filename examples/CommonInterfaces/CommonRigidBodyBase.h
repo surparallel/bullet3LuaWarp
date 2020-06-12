@@ -83,7 +83,7 @@ struct CommonRigidBodyBase : public CommonExampleInterface
 
 	virtual void addCharacter(btHashString strName,
 		void* param,
-		btVector3 origin,
+		btVector3& origin,
 		btKinematicCharacterController::EventFunCall eventFunCall = 0,
 		std::string callFun = NULL,
 		btScalar height = btScalar(1.0f), 
@@ -144,7 +144,7 @@ struct CommonRigidBodyBase : public CommonExampleInterface
 		(*character)->moveDirection(key);
 	}
 
-	virtual void move(btHashString strName, btVector3 direction) {
+	virtual void move(btHashString strName, btVector3& direction) {
 		btKinematicCharacterController** character = m_character.find(strName);
 		(*character)->moveDirection(direction);
 	}

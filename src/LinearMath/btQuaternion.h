@@ -605,12 +605,12 @@ public:
 		}
 	}
 
-	static btQuaternion LookRotation(btVector3 forward)
+	static btQuaternion LookRotation(btVector3& forward)
 	{
 		return LookRotation(forward, btVector3(0, 1, 0));
 	}
 
-	static btQuaternion LookRotation(btVector3 forward, btVector3 up)
+	static btQuaternion LookRotation(btVector3& forward, btVector3& up)
 	{
 		forward.normalize();
 		btVector3 right = up.cross(forward).normalize();

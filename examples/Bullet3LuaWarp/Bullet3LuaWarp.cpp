@@ -119,10 +119,10 @@ void gui_init(int width, int height)
 	app->m_window->setMouseButtonCallback((b3MouseButtonCallback)OnMouseDown);
 	app->m_window->setMouseMoveCallback((b3MouseMoveCallback)OnMouseMove);
 
-	OpenGLGuiHelper gui(app, false);
-	CommonExampleOptions options(&gui);
+	OpenGLGuiHelper* gui = new OpenGLGuiHelper(app, false);
+	CommonExampleOptions* options = new CommonExampleOptions(gui);
 
-	example = (CommonRigidBodyBase*)StandaloneExampleCreateFunc(options);
+	example = (CommonRigidBodyBase*)StandaloneExampleCreateFunc(*options);
 
 	example->initPhysics();
 	example->resetCamera();
@@ -254,7 +254,7 @@ static int bullet3_loadOBJ(lua_State *L){
 	return 0;
 }
 
-void bullet3_eventFunCall(void* character, void* m_param, btKinematicCharacterController::EVENT_CONTROL ec, btVector3 start, btVector3 end, btScalar angle) {
+void bullet3_eventFunCall(void* character, void* m_param, btKinematicCharacterController::EVENT_CONTROL ec, btVector3& start, btVector3& end, btScalar angle) {
 
 	btKinematicCharacterController* btCharacter = (btKinematicCharacterController*)character;
 	lua_State *L = (lua_State *)m_param;

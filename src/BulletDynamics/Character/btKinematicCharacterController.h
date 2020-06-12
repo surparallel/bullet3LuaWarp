@@ -144,7 +144,7 @@ public:
 		EC_STOP = 3,
 	};
 
-	typedef void(*EventFunCall)(void* character, void* m_param, EVENT_CONTROL ec, btVector3 start, btVector3 end, btScalar angle);
+	typedef void(*EventFunCall)(void* character, void* m_param, EVENT_CONTROL ec, btVector3& start, btVector3& end, btScalar angle);
 	
 	btScalar m_walkVelocity;
 	EventFunCall m_eventFunCall;
@@ -236,12 +236,12 @@ public:
 	void setUpInterpolate(bool value);
 
 	void moveDirection(btCollisionWorld * collisionWorld, unsigned int key, btScalar deltaTime);
-	void moveDirection(btCollisionWorld * collisionWorld, btVector3 direction, btScalar deltaTime);
-	void moveDirection(btVector3 direction);
+	void moveDirection(btCollisionWorld * collisionWorld, btVector3& direction, btScalar deltaTime);
+	void moveDirection(btVector3& direction);
 	void moveDirection(unsigned int key);
 
 	bool onGround(btCollisionWorld * collisionWorld) const;
-	btVector3 LookAtRotation(const btVector3 lookHere) const;
+	btVector3 LookAtRotation(const btVector3& lookHere) const;
 
 	void SetUseGhostObjectSweepTest(bool useGhostObjectSweepTest);
 

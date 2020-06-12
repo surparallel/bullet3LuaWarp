@@ -681,7 +681,7 @@ void btKinematicCharacterController::moveDirection(btCollisionWorld * collisionW
 	setWalkDirection(walkDirection * walkSpeed);
 }
 
-btVector3 btKinematicCharacterController::LookAtRotation(const btVector3 lookHere) const
+btVector3 btKinematicCharacterController::LookAtRotation(const btVector3& lookHere) const
 {
 	btTransform xform;
 	xform = m_ghostObject->getWorldTransform();
@@ -695,7 +695,7 @@ btVector3 btKinematicCharacterController::LookAtRotation(const btVector3 lookHer
 	return btVector3(x, y, z);
 }
 
-void btKinematicCharacterController::moveDirection(btCollisionWorld * collisionWorld, btVector3 direction, btScalar deltaTime) {
+void btKinematicCharacterController::moveDirection(btCollisionWorld * collisionWorld, btVector3& direction, btScalar deltaTime) {
 
 	///设置行走方向
 	btTransform xform;
@@ -804,7 +804,7 @@ void btKinematicCharacterController::moveDirection(btCollisionWorld * collisionW
 	setWalkDirection(walkDirection * walkSpeed);
 }
 
-void btKinematicCharacterController::moveDirection(btVector3 direction) {
+void btKinematicCharacterController::moveDirection(btVector3& direction) {
 	m_isdirection = true;
 	m_look = 0;
 	m_direction = direction;
