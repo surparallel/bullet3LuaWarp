@@ -67,7 +67,7 @@ public:
 	}
 };
 
-int gui_update() {
+static int gui_update() {
 
 	b3Clock clock;
 	app->m_renderer->init();
@@ -99,7 +99,7 @@ int gui_update() {
 	}
 }
 
-void gui_init(int width, int height)
+static void gui_init(int width, int height)
 {
 	if (example != 0) {
 		example->exitPhysics();
@@ -128,7 +128,7 @@ void gui_init(int width, int height)
 	example->resetCamera();
 }
 
-int nogui_update() {
+static int nogui_update() {
 
 	b3Clock clock;
 	btScalar dtSec = btScalar(clock.getTimeInSeconds());
@@ -140,7 +140,7 @@ int nogui_update() {
 	return 0;
 }
 
-void nogui_init(int width, int height)
+static void nogui_init(int width, int height)
 {
 	if (example != 0) {
 		example->exitPhysics();
@@ -159,7 +159,7 @@ void nogui_init(int width, int height)
 	example->resetCamera();
 }
 
-void destory()
+static void destory()
 {
 	if (example != 0) {
 		example->exitPhysics();
@@ -218,14 +218,10 @@ static int bullet3_loadOBJ(lua_State *L){
 	float mass = luaL_checknumber(L, 8);
 
 	ConvexDecomposition::WavefrontObj wobj;
-	printf("load first try"); fflush(stdout);
-	std::string filename("bunny.obj");
-	int result = wobj.loadObj("bunny.obj");
-	if (!result)
-	{
-		printf("first try fail\n"); fflush(stdout);
-		printf("load second try");  fflush(stdout);
-		result = wobj.loadObj("../bunny.obj");
+	std::string filename(file);
+	int result = wobj.loadObj(file);
+	if (!result) {
+		return 0;
 	}
 
 	printf("--load status %d\n", result);
@@ -352,9 +348,22 @@ static int bullet3_moveDir(lua_State *L){
 	return 0;
 }
 
+static int bullet3_moveName(lua_State *L){
+	btHashString name = luaL_checkstring(L, 1);
+	btHashString name2 = luaL_checkstring(L, 2);
+
+	btPairCachingGhostObject** ghostObject2 = example->m_ghostObject.find(name2);
+	if (ghostObject2) {
+		btTransform& bt = (*ghostObject2)->getWorldTransform();
+		example->move(name, bt.getOrigin());
+	}
+	
+	return 0;
+}
+
 static int bullet3_moveKey(lua_State *L){
 	btHashString name = luaL_checkstring(L, 1);
-	float key = luaL_checknumber(L, 2);
+	unsigned int key = luaL_checkinteger(L, 2);
 
 	example->move(name, key);
 	return 0;
@@ -434,6 +443,50 @@ static int bullet3_addBoxShape(lua_State *L){
 
 }
 
+static int bullet3_getTransform(lua_State *L){
+	btHashString name = luaL_checkstring(L, 1);
+	btPairCachingGhostObject** ghostObject= example->m_ghostObject.find(name);
+	if (*ghostObject) {
+		btTransform& bt = (*ghostObject)->getWorldTransform();
+
+		lua_createtable(L, 0, 0);
+
+		lua_pushstring(L, "x");
+		lua_pushnumber(L, bt.getOrigin().getX());
+		lua_settable(L, -3);
+
+		lua_pushstring(L, "y");
+		lua_pushnumber(L, bt.getOrigin().getY());
+		lua_settable(L, -3);
+
+		lua_pushstring(L, "z");
+		lua_pushnumber(L, bt.getOrigin().getZ());
+		lua_settable(L, -3);
+		return 1;
+	} else {
+		lua_pushnil(L);
+		return 1;
+	}
+}
+
+static int bullet3_getDistance(lua_State *L){
+
+	btHashString name = luaL_checkstring(L, 1);
+	btHashString name2 = luaL_checkstring(L, 2);
+
+	btPairCachingGhostObject** ghostObject = example->m_ghostObject.find(name);
+	btPairCachingGhostObject** ghostObject2 = example->m_ghostObject.find(name2);
+	if (*ghostObject && ghostObject2) {
+		btTransform& bt = (*ghostObject)->getWorldTransform();
+		btTransform& bt2 = (*ghostObject2)->getWorldTransform();
+		lua_pushnumber(L, bt.getOrigin().distance2(bt2.getOrigin()));
+		return 1;
+	} else {
+		lua_pushnil(L);
+		return 1;
+	}
+}
+
 static int bullet3_deleteRigidBody(lua_State *L){
 	btHashString name = luaL_checkstring(L, 1);
 	btRigidBody** rigidBody = example->m_btRigidBody.find(name);
@@ -455,6 +508,7 @@ static const luaL_reg Mylib[] = {
 	{ "character2", bullet3_addCharacter2 },
 	{ "removeCharacter", bullet3_removeCharacter },
 
+	{ "moveName", bullet3_moveName },
 	{ "moveDir", bullet3_moveDir },
 	{ "moveKey", bullet3_moveKey },
 	{ "rayTest", bullet3_rayTest},
@@ -465,6 +519,8 @@ static const luaL_reg Mylib[] = {
 	{ "gui_update", bullet3_guiupdate },
 	{ "gui_init", bullet3_guiinit },
 	
+	{ "getDistance", bullet3_getDistance },
+	{ "getTransform", bullet3_getTransform },
 	{ "destroy", bullet3_destory },
 	{ NULL, NULL },
 };
