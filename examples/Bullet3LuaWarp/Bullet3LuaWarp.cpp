@@ -408,7 +408,7 @@ static int bullet3_rayTest(lua_State *L){
 	return 1;
 }
 
-static int bullet3_addBoxShape(lua_State *L){
+static int bullet3_addBoxShape(lua_State *L) {
 	btHashString name = luaL_checkstring(L, 1);
 
 	float x = luaL_checknumber(L, 2);
@@ -438,9 +438,14 @@ static int bullet3_addBoxShape(lua_State *L){
 		btRigidBody* rigidBody = example->createRigidBody(mass, groundTransform, groundShape, btVector4(0, 0, 1, 1));
 		example->m_btRigidBody.insert(name, rigidBody);
 	}
-
+	
 	return 0;
 
+}
+
+static int bullet3_GraphicsObjects(lua_State *L) {
+	example->m_guiHelper->autogenerateGraphicsObjects(example->m_dynamicsWorld);
+	return 0;
 }
 
 static int bullet3_getTransform(lua_State *L){
@@ -516,9 +521,11 @@ static const luaL_reg Mylib[] = {
 	{ "update", bullet3_update },
 	{ "init", bullet3_init },
 	
+
 	{ "gui_update", bullet3_guiupdate },
 	{ "gui_init", bullet3_guiinit },
 	
+	{ "graphicsObjects", bullet3_GraphicsObjects },
 	{ "getDistance", bullet3_getDistance },
 	{ "getTransform", bullet3_getTransform },
 	{ "destroy", bullet3_destory },
