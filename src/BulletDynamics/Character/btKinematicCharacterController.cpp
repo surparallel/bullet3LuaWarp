@@ -697,9 +697,28 @@ btVector3 btKinematicCharacterController::LookAtRotation(const btVector3& lookHe
 
 void btKinematicCharacterController::moveDirection(btCollisionWorld * collisionWorld, btVector3& direction, btScalar deltaTime) {
 
-	///设置行走方向
 	btTransform xform;
 	xform = m_ghostObject->getWorldTransform();
+
+	if (m_preisdirection == true) {
+		m_isdirection = false;
+		m_useWalkDirection = false;
+
+		if (m_eventFunCall) {
+			m_eventFunCall(this, m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
+		}
+
+		return;
+	}
+
+	///设置行走方向
+
+	btVector3 norn = direction - xform.getOrigin();
+	norn.setY(0);
+
+	btMatrix3x3 orn = btMatrix3x3(btQuaternion::LookRotation(btVector3(norn)).inverse());
+	m_ghostObject->getWorldTransform().setBasis(orn);
+
 	//获取本地坐标向量,并且单位化
 	btVector3 forwardDir = xform.getBasis()[2];
 	
@@ -712,104 +731,39 @@ void btKinematicCharacterController::moveDirection(btCollisionWorld * collisionW
 
 	btVector3 walkDirection = btVector3(0.0, 0.0, 0.0);
 	btScalar walkSpeed = m_walkVelocity * deltaTime * 2.0f;
-	btVector3 norn = direction - xform.getOrigin();
-	norn.setY(0);
-	
-	//控制前后行走,以及旋转方向,
-/*	if (m_look == 0 && dorn <= -0.05f)
-	{
-		float yaw = 0.05f;
-		btMatrix3x3 orn = m_ghostObject->getWorldTransform().getBasis();
-		orn *= btMatrix3x3(btQuaternion(btVector3(0, 1, 0), yaw));
-		m_ghostObject->getWorldTransform().setBasis(orn);
-	} else if (m_look == 0 && dorn >= 0.05f) {
-		float yaw = -0.05f;
-		btMatrix3x3 orn = m_ghostObject->getWorldTransform().getBasis();
-		orn *= btMatrix3x3(btQuaternion(btVector3(0, 1, 0), yaw));
-		m_ghostObject->getWorldTransform().setBasis(orn);
-	} else *///if (m_look == 0 || btQuaternion::LookRotation(btVector3(norn)).inverse() != btQuaternion::LookRotation(btVector3(m_norn)).inverse()) {
-	/*
-	if (m_look == 1 && m_norn.length() == norn.length())
-	{
-		if (m_nornCount-- == 0) {
-			//stop call back
-			m_isdirection = false;
-			m_useWalkDirection = false;
 
-			if (m_eventFunCall) {
-				m_eventFunCall(m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
-			}
-			return;
-		} else {
-			m_norn = norn;
-			walkDirection += forwardDir;
-		}
-	} else if (m_look == 1 && norn.length() < 0.8) {
-			//stop call back
-			m_isdirection = false;
-			m_useWalkDirection = false;
-			if (m_eventFunCall) {
-				m_eventFunCall(m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
-			}
-			return;
-	} else {
-		m_nornCount = 10;
-		m_norn = norn;
-		walkDirection += forwardDir;
-	}*/
+	walkDirection += forwardDir;
+	walkDirection *= walkSpeed;
 
-	if (m_look == 0 || std::abs(btQuaternion::LookRotation(btVector3(norn)).getAngle() - btQuaternion::LookRotation(btVector3(m_norn)).getAngle()) > 0.001) {
-		m_look = 1;
-		m_norn = norn;
-		m_nornCount = 3;
+	btVector3 Origin = xform.getOrigin();
+	Origin.setY(0);
 
-		btMatrix3x3 orn = btMatrix3x3(btQuaternion::LookRotation(btVector3(norn)).inverse());
-		m_ghostObject->getWorldTransform().setBasis(orn);
+	if (direction.distance2(direction + walkDirection) > direction.distance2(Origin) && direction.distance2(Origin + walkDirection) > direction.distance2(Origin)) {
+		walkDirection = direction - xform.getOrigin();
+		walkDirection.setY(0);
+		m_preisdirection =  true;
+	}
 
-		if (m_eventFunCall) {
-			m_eventFunCall(this, m_param, EC_DIR, xform.getOrigin(), direction, m_ghostObject->getWorldTransform().getRotation().getAngle());
+	//遇到障碍无法移动的情况
+	if (abs(m_lasttarget.length2() - Origin.length2()) < 0.001 && m_nornCount > 0) {
+		if (--m_nornCount == 0) {
+			m_preisdirection = true;
 		}
 	}
 
-	if (m_look == 1 && std::abs(m_norn.length() - norn.length()) < 0.001)
-	{
-		if (m_nornCount-- == 0) {
-			//stop call back
-			m_isdirection = false;
-			m_useWalkDirection = false;
-
-			if (m_eventFunCall) {
-				m_eventFunCall(this, m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
-			}
-			return;
-		} else {
-			m_norn = norn;
-			walkDirection += forwardDir;
-		}
-	} else if (m_look == 1 && norn.length() < 0.8) {
-		//stop call back
-		m_isdirection = false;
-		m_useWalkDirection = false;
-		if (m_eventFunCall) {
-			m_eventFunCall(this, m_param, EC_STOP, xform.getOrigin(), xform.getOrigin(), xform.getRotation().getAngle());
-		}
-		return;
-	} else {
-		m_nornCount = 10;
-		m_norn = norn;
-		walkDirection += forwardDir;
-	}
-
+	m_lasttarget = Origin;
 	//按照方向移动角色
-	setWalkDirection(walkDirection * walkSpeed);
+	setWalkDirection(walkDirection);
 }
 
 void btKinematicCharacterController::moveDirection(btVector3& direction) {
 	m_isdirection = true;
+	m_preisdirection = false;
 	m_look = 0;
 	m_direction = direction;
-	m_nornLength = (direction - m_ghostObject->getWorldTransform().getOrigin()).length();
-	m_nornCount = 3;
+	m_lasttarget = m_ghostObject->getWorldTransform().getOrigin();
+	m_lasttarget.setY(0);
+	m_nornCount = 5;
 }
 
 void btKinematicCharacterController::moveDirection(unsigned int key) {

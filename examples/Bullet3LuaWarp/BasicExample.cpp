@@ -60,7 +60,7 @@ void BasicExample::initPhysics()
 
 	if (m_dynamicsWorld->getDebugDrawer())
 		m_dynamicsWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe + btIDebugDraw::DBG_DrawContactPoints);
-	
+/*	
 	///create a few basic rigid bodies
 	btBoxShape* groundShape = createBoxShape(btVector3(btScalar(50.), btScalar(50.), btScalar(50.)));
 
@@ -77,7 +77,7 @@ void BasicExample::initPhysics()
 		btScalar mass(0.);
 		createRigidBody(mass, groundTransform, groundShape, btVector4(0, 0, 1, 1));
 	}
-/*
+
 	{
 		//create a few dynamic rigidbodies
 		// Re-using the same collision is better for memory usage and performance

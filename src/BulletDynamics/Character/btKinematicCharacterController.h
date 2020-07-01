@@ -95,11 +95,11 @@ protected:
 	bool full_drop;
 	bool bounce_fix;
 
+	bool m_preisdirection;
 	bool m_isdirection;
 	btVector3 m_direction;
 	int m_look;
-	float m_nornLength;
-	btVector3 m_norn;
+	btVector3 m_lasttarget;
 	int m_nornCount;
 
 	int m_key;
