@@ -25,6 +25,7 @@ extern "C" {
 
 static CommonRigidBodyBase* example = 0;
 static SimpleOpenGL2App* app = 0;
+static b3Clock clock;
 
 static b3MouseMoveCallback prevMouseMoveCallback = 0;
 static void OnMouseMove(float x, float y)
@@ -69,13 +70,10 @@ public:
 
 static int gui_update() {
 
-	b3Clock clock;
 	app->m_renderer->init();
 	app->m_renderer->updateCamera(app->getUpAxis());
 
 	btScalar dtSec = btScalar(clock.getTimeInSeconds());
-	if (dtSec > 0.1)
-		dtSec = 0.1;
 
 	example->stepSimulation(dtSec);
 	clock.reset();
@@ -132,8 +130,6 @@ static int nogui_update() {
 
 	b3Clock clock;
 	btScalar dtSec = btScalar(clock.getTimeInSeconds());
-	if (dtSec > 0.1)
-		dtSec = 0.1;
 
 	example->stepSimulation(dtSec);
 
@@ -481,7 +477,7 @@ static int bullet3_getDistance(lua_State *L){
 
 	btPairCachingGhostObject** ghostObject = example->m_ghostObject.find(name);
 	btPairCachingGhostObject** ghostObject2 = example->m_ghostObject.find(name2);
-	if (*ghostObject && ghostObject2) {
+	if (ghostObject && ghostObject2) {
 		btTransform& bt = (*ghostObject)->getWorldTransform();
 		btTransform& bt2 = (*ghostObject2)->getWorldTransform();
 		lua_pushnumber(L, bt.getOrigin().distance2(bt2.getOrigin()));

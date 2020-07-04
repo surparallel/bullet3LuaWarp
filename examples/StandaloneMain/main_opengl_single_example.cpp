@@ -96,9 +96,11 @@ int main(int argc, char* argv[])
 		app->m_renderer->updateCamera(app->getUpAxis());
 
 		btScalar dtSec = btScalar(clock.getTimeInSeconds());
+
+		/*
 		if (dtSec > 0.1)
 			dtSec = 0.1;
-
+*/
 		example->stepSimulation(dtSec);
 		clock.reset();
 
